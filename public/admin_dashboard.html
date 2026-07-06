@@ -2465,6 +2465,20 @@ function filterAbsenceLog() {
 let currentFamilyId = null;
 let currentFamilyRecord = null;
 
+function parseCurrencyValue(value) {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const cleaned = String(value).trim().replace(/[₱,\s]/g, '');
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatCurrency(value, suffix = '') {
+    const parsed = parseCurrencyValue(value);
+    if (parsed === null) return '—';
+    return `₱${parsed.toLocaleString()}${suffix}`;
+}
+
 function renderFamilies() {
     const list = document.getElementById('familyList');
     if (!list) return;
@@ -2490,6 +2504,7 @@ function viewFamily(id) {
     if (!f) return;
     currentFamilyId = id;
     currentFamilyRecord = f;
+    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
     document.querySelectorAll('.profile-item').forEach(el => el.classList.remove('selected'));
     document.getElementById(`fi-${id}`)?.classList.add('selected');
     document.getElementById('family-empty-state').style.display = 'none';
@@ -2500,14 +2515,18 @@ function viewFamily(id) {
     document.getElementById('fd-guardian').textContent = f.guardian;
     document.getElementById('fd-barangay').textContent = f.barangay || '—';
     document.getElementById('fd-contact').textContent = f.contact || '—';
-    document.getElementById('fd-income').textContent = f.income ? '₱' + Number(f.income).toLocaleString() + '/mo' : '—';
+    const linkedApps = apps.filter(a => a.status === 'Accepted' && a.barangay && f.barangay && a.barangay.toLowerCase() === f.barangay.toLowerCase());
+    const linkedScholar = linkedApps[0] || null;
+    const familyIncome = parseCurrencyValue(f.income);
+    const appIncome = parseCurrencyValue(linkedScholar?.totalIncome ?? linkedScholar?.income);
+    const displayIncome = familyIncome ?? appIncome;
+    document.getElementById('fd-income').textContent = displayIncome === null ? '—' : formatCurrency(displayIncome, '/mo');
     const benefits = (f.benefits || '').split(',').filter(Boolean);
     document.getElementById('fd-benefits').innerHTML = benefits.length
         ? benefits.map(b => `<span class="badge badge-blue" style="margin:2px;">${b.trim()}</span>`).join(' ')
         : '<span style="color:#bbb; font-size:.84rem;">None listed.</span>';
 
     // Linked scholars from apps (match by barangay as heuristic)
-    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
     const linked = apps.filter(a => a.status === 'Accepted' && a.barangay && f.barangay && a.barangay.toLowerCase() === f.barangay.toLowerCase());
     document.getElementById('fd-scholars').innerHTML = linked.length
         ? linked.map(s => `<span class="badge badge-green" style="margin:2px; cursor:pointer;" onclick="nav('profiles',document.querySelector('.nav-item[onclick*=profiles]')); setTimeout(()=>viewProfile(${s.id}),200);">${s.name}</span>`).join(' ')
