@@ -1398,10 +1398,14 @@ async function loadAllData() {
         localStorage.setItem('mefamdev_intake_sheets', JSON.stringify(intakeList));
         localStorage.setItem('mefamdev_assessments', JSON.stringify(assessmentList));
 
+        const existingAbsences = JSON.parse(localStorage.getItem('mefamdev_absences') || '{}');
         const absencesMap = {};
         (Array.isArray(absences) ? absences : []).forEach(row => {
             absencesMap[row.app_id || row.appId] = { days: Number(row.days || 0), reason: row.reason || '' };
         });
+        if (Object.keys(absencesMap).length === 0 && Object.keys(existingAbsences).length > 0) {
+            Object.assign(absencesMap, existingAbsences);
+        }
         localStorage.setItem('mefamdev_absences', JSON.stringify(absencesMap));
 
         const nextSavedGrades = {};
@@ -2411,24 +2415,39 @@ function openAddAbsenceModalFor(id) {
     document.getElementById('absenceScholar').value = id;
 }
 
-function saveAbsence() {
+async function saveAbsence() {
     const id = parseInt(document.getElementById('absenceScholar').value);
     const days = parseInt(document.getElementById('absenceDays').value) || 0;
     const reason = document.getElementById('absenceReason').value.trim();
+    if (!id || !Number.isFinite(id) || days <= 0) {
+        alert('Please select a scholar and enter a valid number of days.');
+        return;
+    }
+
+    try {
+        await MefamAPI.logAbsence(id, days, reason);
+    } catch (error) {
+        console.warn('Could not persist absence to the server; using local fallback.', error);
+    }
+
     const absences = JSON.parse(localStorage.getItem('mefamdev_absences') || '{}');
     absences[id] = { days: (absences[id]?.days || 0) + days, reason: reason || absences[id]?.reason || '' };
     localStorage.setItem('mefamdev_absences', JSON.stringify(absences));
     closeModal('absenceModal');
-    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-    renderAttendance(apps.filter(a => a.status === 'Accepted'));
+    await loadAllData();
 }
 
-function resetAbsence(id) {
+async function resetAbsence(id) {
+    try {
+        await MefamAPI.resetAbsence(id);
+    } catch (error) {
+        console.warn('Could not reset absence on the server; using local fallback.', error);
+    }
+
     const absences = JSON.parse(localStorage.getItem('mefamdev_absences') || '{}');
     delete absences[id];
     localStorage.setItem('mefamdev_absences', JSON.stringify(absences));
-    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-    renderAttendance(apps.filter(a => a.status === 'Accepted'));
+    await loadAllData();
 }
 
 function filterAbsenceLog() {
