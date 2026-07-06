@@ -1,16 +1,3 @@
-/**
- * mefamdev-api.js
- * ─────────────────────────────────────────────────────────────────────────────
- * Drop-in API layer for MEFAMDEV-Life.
- *
- * Add this to every HTML page:
- *   <script src="/mefamdev-api.js"></script>
- *
- * It replaces direct localStorage usage with real API calls.
- * The public form and applicant portal also use this.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
 const API_BASE = window.location.origin + '/api';
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
@@ -129,7 +116,22 @@ const MefamAPI = {
   async deleteAnnouncement(id) { return this._delete(`/comms/${id}`); },
 
   // ── Internal fetch helpers ────────────────────────────────────────────────
-  _token() { return sessionStorage.getItem('mefamdev_token') || ''; },
+  _token() {
+    const sessionToken = sessionStorage.getItem('mefamdev_token') || '';
+    if (sessionToken) return sessionToken;
+
+    try {
+      const previewRaw = localStorage.getItem('mefamdev_preview_session');
+      if (previewRaw) {
+        const previewSession = JSON.parse(previewRaw);
+        if (previewSession?.token) return previewSession.token;
+      }
+    } catch (e) {
+      // Ignore malformed preview session data.
+    }
+
+    return '';
+  },
 
   async _get(path) {
     let token = this._token();
