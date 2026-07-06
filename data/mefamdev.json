@@ -37,7 +37,13 @@
       "id": 4
     }
   ],
-  "applications": [],
+  "applications": [
+    {
+      "id": 1,
+      "name": "Railway Test",
+      "status": "Pending Review"
+    }
+  ],
   "families": [],
   "events": [],
   "event_attendance": [],

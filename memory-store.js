@@ -76,20 +76,19 @@ class QueryBuilder {
     if (!table) return [];
 
     const rows = this.getRowsForTable(table);
-    const normalizedParams = this.normalizeParams(params);
     const upper = this.query.toUpperCase();
 
     if (upper.includes('COUNT(*)')) {
-      return [{ c: this.filterRows(rows, normalizedParams).length }];
+      return [{ c: this.filterRows(rows, params).length }];
     }
 
     if (upper.includes('SUM(')) {
       const field = this.extractSumField();
-      const total = this.filterRows(rows, normalizedParams).reduce((sum, row) => sum + (Number(row[field]) || 0), 0);
+      const total = this.filterRows(rows, params).reduce((sum, row) => sum + (Number(row[field]) || 0), 0);
       return [{ total }];
     }
 
-    return this.filterRows(rows, normalizedParams);
+    return this.filterRows(rows, params);
   }
 
   run(...args) {
@@ -98,9 +97,9 @@ class QueryBuilder {
 
     const upper = this.query.toUpperCase();
     const rows = this.getRowsForTable(table);
+    const values = this.normalizeParams(args.length === 1 ? args[0] : args);
 
     if (upper.includes('INSERT')) {
-      const values = this.normalizeParams(args[0] !== undefined ? args[0] : args);
       const item = this.buildInsertItem(table, values);
       if (upper.includes('OR IGNORE')) {
         const conflictColumn = this.detectUniqueColumn(table, values);
@@ -115,17 +114,25 @@ class QueryBuilder {
     }
 
     if (upper.includes('UPDATE')) {
-      const setColumns = this.parseSetColumns();
+      const setAssignments = this.parseSetAssignments();
       const whereClause = this.parseWhereConditions();
-      const values = this.normalizeParams(args);
+      const positionalValues = Array.isArray(values) ? values : [];
       let changed = 0;
+      let setIndex = 0;
       rows.forEach(row => {
-        if (this.matchesWhere(row, whereClause, values)) {
-          setColumns.forEach((column, index) => {
-            row[column] = values[index];
-          });
-          changed += 1;
+        if (!this.matchesWhere(row, whereClause, positionalValues.slice(this.countPlaceholderAssignments(setAssignments)))) {
+          return;
         }
+
+        setAssignments.forEach(assignment => {
+          if (assignment.kind === 'placeholder') {
+            row[assignment.column] = positionalValues[setIndex] !== undefined ? positionalValues[setIndex] : undefined;
+            setIndex += 1;
+          } else if (assignment.kind === 'literal') {
+            row[assignment.column] = assignment.value;
+          }
+        });
+        changed += 1;
       });
       this.store.data[table] = rows;
       this.store.save();
@@ -134,8 +141,8 @@ class QueryBuilder {
 
     if (upper.includes('DELETE')) {
       const whereClause = this.parseWhereConditions();
-      const values = this.normalizeParams(args);
-      const filtered = rows.filter(row => !this.matchesWhere(row, whereClause, values));
+      const positionalValues = Array.isArray(values) ? values : [];
+      const filtered = rows.filter(row => !this.matchesWhere(row, whereClause, positionalValues));
       this.store.data[table] = filtered;
       this.store.save();
       return { changes: rows.length - filtered.length };
@@ -157,10 +164,10 @@ class QueryBuilder {
   }
 
   normalizeParams(params) {
-    if (params === undefined || params === null) return {};
+    if (params === undefined || params === null) return [];
     if (Array.isArray(params)) return params;
     if (typeof params === 'object') return params;
-    return { value: params };
+    return [params];
   }
 
   filterRows(rows, params) {
@@ -175,10 +182,17 @@ class QueryBuilder {
     if (!whereMatch) return clauses;
 
     const fragments = whereMatch[1].split(/\s+and\s+/i).map(part => part.trim()).filter(Boolean);
+    let placeholderIndex = 0;
     fragments.forEach(fragment => {
       const simpleMatch = fragment.match(/([a-z_]+)\s*=\s*(?:'([^']+)'|"([^"]+)"|(\?))/i);
       if (simpleMatch) {
-        clauses.push({ column: simpleMatch[1], value: simpleMatch[2] || simpleMatch[3] || simpleMatch[4] });
+        const literalValue = simpleMatch[2] || simpleMatch[3];
+        clauses.push({
+          column: simpleMatch[1],
+          kind: simpleMatch[4] === '?' ? 'placeholder' : 'literal',
+          value: literalValue,
+          position: simpleMatch[4] === '?' ? placeholderIndex++ : null
+        });
       }
     });
 
@@ -187,17 +201,41 @@ class QueryBuilder {
 
   matchesWhere(row, whereClause, params) {
     if (!whereClause.length) return true;
-    const values = Array.isArray(params) ? params : [params];
-    return whereClause.every((clause, index) => {
-      const expected = clause.value === '?' ? values[index] : clause.value;
+    const values = Array.isArray(params) ? params : [];
+    return whereClause.every(clause => {
+      let expected;
+      if (clause.kind === 'placeholder') {
+        expected = values[clause.position] !== undefined ? values[clause.position] : values[0];
+      } else {
+        expected = clause.value;
+      }
       return row[clause.column] === expected;
     });
   }
 
-  parseSetColumns() {
-    const match = this.query.match(/set\s+(.+?)\s+where/i);
+  parseSetAssignments() {
+    const match = this.query.match(/set\s+(.+?)(?:\s+where|$)/i);
     if (!match) return [];
-    return match[1].split(',').map(part => part.trim().split('=')[0].trim());
+    const assignments = match[1].split(',').map(part => part.trim()).filter(Boolean);
+    const parsed = [];
+    let placeholderIndex = 0;
+    assignments.forEach(assign => {
+      const setMatch = assign.match(/([a-z_]+)\s*=\s*(?:'([^']+)'|"([^"]+)"|(\?))/i);
+      if (setMatch) {
+        const literalValue = setMatch[2] || setMatch[3];
+        parsed.push({
+          column: setMatch[1],
+          kind: setMatch[4] === '?' ? 'placeholder' : 'literal',
+          value: literalValue,
+          position: setMatch[4] === '?' ? placeholderIndex++ : null
+        });
+      }
+    });
+    return parsed;
+  }
+
+  countPlaceholderAssignments(assignments) {
+    return assignments.filter(assignment => assignment.kind === 'placeholder').length;
   }
 
   detectUniqueColumn(table, values) {
