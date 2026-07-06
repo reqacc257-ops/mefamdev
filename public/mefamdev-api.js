@@ -111,6 +111,12 @@ const MefamAPI = {
   async saveAssessment(data) { return this._post('/records/assessments', data); },
   async deleteAssessment(id) { return this._delete(`/records/assessments/${id}`); },
 
+  // ── Document Checklist ────────────────────────────────────────────────────
+  async getDocuments(appId) { return this._get(`/documents/${appId}`); },
+  async setDocumentStatus(appId, docKey, status, note) {
+    return this._put(`/documents/${appId}/${docKey}`, { status, note });
+  },
+
   // ── Communications ────────────────────────────────────────────────────────
   async getAnnouncements() { return this._get('/comms'); },
   async postAnnouncement(subject, message, target, tag) {
