@@ -752,7 +752,10 @@
 
             <div style="margin-top:12px;">
                 <label class="field-label">Set a password (optional)</label>
-                <input type="password" id="appPassword" placeholder="Create a password to access your application">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <input type="password" id="appPassword" placeholder="Create a password to access your application" style="flex:1;">
+                    <button type="button" class="btn btn-secondary" id="toggleAppPw" onclick="toggleAppPassword()">Show</button>
+                </div>
                 <p style="font-size:.8rem; color:#666; margin-top:6px;">If you set a password, you'll need it (with your reference number and full name) to access your application.</p>
             </div>
 
@@ -1074,6 +1077,14 @@
 
     function goToPortal() {
         window.location.href = 'applicant_portal.html';
+    }
+
+    function toggleAppPassword() {
+        const el = document.getElementById('appPassword');
+        const btn = document.getElementById('toggleAppPw');
+        if (!el) return;
+        if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
+        else { el.type = 'password'; btn.textContent = 'Show'; }
     }
 </script>
 <script src="/mefamdev-api.js"></script>
