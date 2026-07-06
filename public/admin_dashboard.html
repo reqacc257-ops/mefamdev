@@ -924,7 +924,10 @@
                                 <h3 style="font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--navy);" id="fd-surname"></h3>
                                 <span id="fd-incomeBadge"></span>
                             </div>
-                            <button class="btn btn-red btn-sm" onclick="deleteFamily(currentFamilyId)">🗑 Remove</button>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-ghost btn-sm" onclick="openAddFamilyModal(currentFamilyRecord)">✎ Edit</button>
+                                <button class="btn btn-red btn-sm" onclick="deleteFamily(currentFamilyId)">🗑 Remove</button>
+                            </div>
                         </div>
                         <hr style="border:0; border-top:1px solid var(--border); margin-bottom:14px;">
                         <div class="grid-2eq" style="gap:8px; margin-bottom:12px;">
@@ -949,8 +952,9 @@
         <!-- Add Family Modal -->
         <div class="modal-overlay" id="familyModal">
             <div class="modal" style="max-width:520px;">
-                <div class="modal-header"><h2>Add Beneficiary Family</h2><button class="btn" style="background:rgba(255,255,255,.15);color:#fff;" onclick="closeModal('familyModal')">✕</button></div>
+                <div class="modal-header"><h2 id="familyModalTitle">Add Beneficiary Family</h2><button class="btn" style="background:rgba(255,255,255,.15);color:#fff;" onclick="closeModal('familyModal')">✕</button></div>
                 <div class="modal-body">
+                    <input type="hidden" id="fm-id">
                     <div class="grid-2eq" style="gap:12px;">
                         <div><label>Family Surname</label><input type="text" id="fm-surname" placeholder="e.g. Dela Cruz" style="width:100%;"></div>
                         <div><label>Guardian Name</label><input type="text" id="fm-guardian" placeholder="Full name" style="width:100%;"></div>
@@ -2273,6 +2277,7 @@ function filterAbsenceLog() {
    BENEFICIARY FAMILIES
 ══════════════════════════════════════ */
 let currentFamilyId = null;
+let currentFamilyRecord = null;
 
 function renderFamilies() {
     const list = document.getElementById('familyList');
@@ -2298,6 +2303,7 @@ function viewFamily(id) {
     const f = families.find(x => x.id === id);
     if (!f) return;
     currentFamilyId = id;
+    currentFamilyRecord = f;
     document.querySelectorAll('.profile-item').forEach(el => el.classList.remove('selected'));
     document.getElementById(`fi-${id}`)?.classList.add('selected');
     document.getElementById('family-empty-state').style.display = 'none';
@@ -2329,25 +2335,50 @@ function filterFamilies() {
     });
 }
 
-function openAddFamilyModal() {
-    ['fm-surname','fm-guardian','fm-barangay','fm-contact','fm-benefits'].forEach(id => { document.getElementById(id).value = ''; });
+function openAddFamilyModal(family = null) {
+    currentFamilyRecord = family || null;
+    const idField = document.getElementById('fm-id');
+    const title = document.getElementById('familyModalTitle');
+    ['fm-id','fm-surname','fm-guardian','fm-barangay','fm-contact','fm-benefits'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('fm-income').value = '';
+    document.getElementById('fm-bracket').value = 'Below Min.';
+
+    if (family) {
+        idField.value = family.id || '';
+        document.getElementById('fm-surname').value = family.surname || '';
+        document.getElementById('fm-guardian').value = family.guardian || '';
+        document.getElementById('fm-barangay').value = family.barangay || '';
+        document.getElementById('fm-contact').value = family.contact || '';
+        document.getElementById('fm-income').value = family.income || '';
+        document.getElementById('fm-bracket').value = family.bracket || 'Below Min.';
+        document.getElementById('fm-benefits').value = family.benefits || '';
+        if (title) title.textContent = 'Edit Beneficiary Family';
+    } else if (title) {
+        title.textContent = 'Add Beneficiary Family';
+    }
+
     document.getElementById('familyModal').classList.add('open');
 }
 
 async function saveFamily() {
     const surname = document.getElementById('fm-surname').value.trim();
     if (!surname) { alert('Please enter a family surname.'); return; }
+    const payload = {
+        surname,
+        guardian: document.getElementById('fm-guardian').value.trim(),
+        barangay: document.getElementById('fm-barangay').value.trim(),
+        contact: document.getElementById('fm-contact').value.trim(),
+        income: document.getElementById('fm-income').value,
+        bracket: document.getElementById('fm-bracket').value,
+        benefits: document.getElementById('fm-benefits').value.trim(),
+    };
     try {
-        await MefamAPI.addFamily({
-            surname,
-            guardian: document.getElementById('fm-guardian').value.trim(),
-            barangay: document.getElementById('fm-barangay').value.trim(),
-            contact: document.getElementById('fm-contact').value.trim(),
-            income: document.getElementById('fm-income').value,
-            bracket: document.getElementById('fm-bracket').value,
-            benefits: document.getElementById('fm-benefits').value.trim(),
-        });
+        const familyId = document.getElementById('fm-id').value;
+        if (familyId) {
+            await MefamAPI.updateFamily(familyId, payload);
+        } else {
+            await MefamAPI.addFamily(payload);
+        }
         closeModal('familyModal');
         await loadAllData();
     } catch (error) {
@@ -2434,7 +2465,7 @@ function renderFinancials() {
     }
 }
 
-function addFunds() {
+async function addFunds() {
     const source = document.getElementById('fundSource').value.trim();
     const amount = parseFloat(document.getElementById('fundAmount').value);
     const date   = document.getElementById('fundDate').value;
@@ -2442,38 +2473,39 @@ function addFunds() {
     if (!source) { alert('Please enter the fund source.'); return; }
     if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
     if (!date) { alert('Please enter the date received.'); return; }
-    const log = JSON.parse(localStorage.getItem('mefamdev_fund_log') || '[]');
-    log.push({ id: Date.now(), source, amount, date, notes });
-    localStorage.setItem('mefamdev_fund_log', JSON.stringify(log));
-    document.getElementById('fundSource').value = '';
-    document.getElementById('fundAmount').value = '';
-    document.getElementById('fundDate').value = '';
-    document.getElementById('fundNotes').value = '';
-    renderFinancials();
-    alert('✅ Funds added successfully!');
+
+    try {
+        await MefamAPI.addFunds(source, amount, date, notes);
+        document.getElementById('fundSource').value = '';
+        document.getElementById('fundAmount').value = '';
+        document.getElementById('fundDate').value = '';
+        document.getElementById('fundNotes').value = '';
+        await loadAllData();
+        alert('✅ Funds added successfully!');
+    } catch (error) {
+        console.error('Failed to add funds:', error);
+        alert('Unable to add the fund entry right now.');
+    }
 }
 
-function disburseStipend() {
+async function disburseStipend() {
     const scholarId = parseInt(document.getElementById('disbScholar').value);
     const amount    = parseFloat(document.getElementById('disbAmount').value);
     const period    = document.getElementById('disbPeriod').value.trim();
     if (!scholarId) { alert('Please select a scholar.'); return; }
     if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
 
-    // Check balance
-    const fundLog  = JSON.parse(localStorage.getItem('mefamdev_fund_log') || '[]');
-    const disbLog  = JSON.parse(localStorage.getItem('mefamdev_disbursements') || '[]');
-    const balance  = fundLog.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0)
-                   - disbLog.reduce((s, d) => s + (parseFloat(d.amount) || 0), 0);
-    if (amount > balance) { alert('Insufficient fund balance (₱' + balance.toLocaleString() + '). Please add funds first.'); return; }
-
-    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-    const scholar = apps.find(a => a.id === scholarId);
-    const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
-    disbLog.push({ id: Date.now(), scholarId, scholarName: scholar?.name || 'Unknown', amount, period, date: now });
-    localStorage.setItem('mefamdev_disbursements', JSON.stringify(disbLog));
-    renderFinancials();
-    alert('💸 Stipend of ₱' + amount.toLocaleString() + ' released to ' + (scholar?.name || 'scholar') + '!');
+    try {
+        await MefamAPI.disburseStipend(scholarId, amount, period);
+        document.getElementById('disbScholar').value = '';
+        document.getElementById('disbAmount').value = '3000';
+        document.getElementById('disbPeriod').value = '';
+        await loadAllData();
+        alert('💸 Stipend released successfully!');
+    } catch (error) {
+        console.error('Failed to disburse stipend:', error);
+        alert('Unable to release the stipend right now.');
+    }
 }
 </script>
 </body>
