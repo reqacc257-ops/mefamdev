@@ -17,26 +17,31 @@ function hashPassword(pw) {
 }
 
 // ── Staff login ───────────────────────────────────────────────────────────────
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
+router.post('/applicant', (req, res) => {
+  const { refNo, name, password } = req.body;
+  if (!refNo) return res.status(400).json({ error: 'Reference number required' });
+  if (!name || String(name).trim().length <= 2) return res.status(400).json({ error: 'Full name required for verification' });
+
+  // Accept "APP-1001" or just "1001"
+  const cleanId = String(refNo).replace(/^app-/i, '').trim();
+  const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(cleanId);
+
+  if (!app) return res.status(404).json({ error: 'Application not found' });
+
+  // Strict-ish name check: applicant must provide a recognizable portion of the stored name
+  const fn = (app.name || '').toLowerCase();
+  const parts = fn.split(/[\s,]+/);
+  const input = String(name).trim().toLowerCase();
+  const nameMatches = parts.some(p => p && input.includes(p)) || fn.includes(input);
+  if (!nameMatches) return res.status(401).json({ error: 'Name does not match application on file' });
+
+  // If the application has a password_hash set, require password and validate it
+  if (app.password_hash) {
+    const hashed = crypto.createHash('sha256').update(String(password || '')).digest('hex');
+    if (!password || hashed !== app.password_hash) return res.status(401).json({ error: 'Invalid password' });
   }
 
-  const staff = db.prepare('SELECT * FROM staff WHERE username = ?').get(username.toLowerCase().trim());
-  if (!staff || staff.password !== hashPassword(password)) {
-    return res.status(401).json({ error: 'Invalid username or password' });
-  }
-
-  const payload = {
-    type: 'staff',
-    id: staff.id,
-    username: staff.username,
-    role: staff.role,
-    name: staff.name,
-    title: staff.title,
-    initials: staff.initials,
-  };
+  const payload = { type: 'applicant', appId: app.id, name: app.name };
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
   res.json({ token, user: payload });
 });
