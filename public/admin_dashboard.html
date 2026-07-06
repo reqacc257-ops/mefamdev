@@ -2206,29 +2206,39 @@ function renderEvents() {
         }).join('') + `</tbody></table>`;
 }
 
-function addEvent() {
+async function addEvent() {
     const name = document.getElementById('evtName').value.trim();
     const date = document.getElementById('evtDate').value;
     const venue = document.getElementById('evtVenue').value.trim();
     const max = parseInt(document.getElementById('evtMax').value) || 75;
     if (!name) { alert('Please enter an event name.'); return; }
-    const events = JSON.parse(localStorage.getItem('mefamdev_events') || '[]');
-    events.push({ id: Date.now(), name, date, venue, max });
-    localStorage.setItem('mefamdev_events', JSON.stringify(events));
-    document.getElementById('evtName').value = '';
-    document.getElementById('evtDate').value = '';
-    document.getElementById('evtVenue').value = '';
-    document.getElementById('evtMax').value = '75';
-    renderEvents();
+
+    try {
+        await MefamAPI.addEvent({ name, date, venue, max });
+        document.getElementById('evtName').value = '';
+        document.getElementById('evtDate').value = '';
+        document.getElementById('evtVenue').value = '';
+        document.getElementById('evtMax').value = '75';
+        await loadAllData();
+        renderEvents();
+    } catch (error) {
+        console.error('Failed to add event:', error);
+        alert('Unable to add the event right now.');
+    }
 }
 
-function deleteEvent(id) {
+async function deleteEvent(id) {
     if (!confirm('Delete this event?')) return;
-    let events = JSON.parse(localStorage.getItem('mefamdev_events') || '[]');
-    events = events.filter(e => e.id !== id);
-    localStorage.setItem('mefamdev_events', JSON.stringify(events));
-    document.getElementById('eventAttendancePanel').style.display = 'none';
-    renderEvents();
+    try {
+        await MefamAPI.deleteEvent(id);
+        currentEventId = null;
+        document.getElementById('eventAttendancePanel').style.display = 'none';
+        await loadAllData();
+        renderEvents();
+    } catch (error) {
+        console.error('Failed to delete event:', error);
+        alert('Unable to delete the event right now.');
+    }
 }
 
 function openEventAttendance(evtId) {
@@ -2255,14 +2265,19 @@ function openEventAttendance(evtId) {
     document.getElementById('eventAttendancePanel').scrollIntoView({ behavior: 'smooth' });
 }
 
-function saveEventAttendance() {
+async function saveEventAttendance() {
     if (!currentEventId) return;
-    const attData = JSON.parse(localStorage.getItem('mefamdev_event_attendance') || '{}');
     const checked = [...document.querySelectorAll('#evtAttList input[type=checkbox]:checked')].map(cb => parseInt(cb.value));
-    attData[currentEventId] = checked;
-    localStorage.setItem('mefamdev_event_attendance', JSON.stringify(attData));
-    renderEvents();
-    alert('Attendance saved!');
+    try {
+        await MefamAPI.saveEventAttendance(currentEventId, checked);
+        await loadAllData();
+        openEventAttendance(currentEventId);
+        renderEvents();
+        alert('Attendance saved!');
+    } catch (error) {
+        console.error('Failed to save attendance:', error);
+        alert('Unable to save attendance right now.');
+    }
 }
 
 /* ══════════════════════════════════════
