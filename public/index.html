@@ -509,7 +509,7 @@ async function doStaffLogin(username) {
         const res = await MefamAPI.loginStaff(username, pass);
         if (res?.token) {
             showLoading('Signing in…', () => {
-                window.location.href = 'admin_dashboard.html';
+                window.location.assign('/admin_dashboard.html');
             });
         } else {
             showError(res?.error || 'Wrong password. Please try again.');
@@ -530,7 +530,7 @@ async function doApplicantLogin(ref) {
         const res = await MefamAPI.loginApplicant(cleanId, nameInput);
         if (res?.token) {
             showLoading('Welcome!', () => {
-                window.location.href = 'applicant_portal.html';
+                window.location.assign('/applicant_portal.html');
             });
         } else {
             showError(res?.error || 'No application found with that reference number. Double-check and try again.');
@@ -565,8 +565,8 @@ window.onload = function () {
         try {
             const s = JSON.parse(session);
             if (Date.now() - s.loginTime < 8 * 60 * 60 * 1000) {
-                if (s.type === 'staff') window.location.href = 'admin_dashboard.html';
-                else window.location.href = 'applicant_portal.html';
+                if (s.type === 'staff') window.location.assign('/admin_dashboard.html');
+                else window.location.assign('/applicant_portal.html');
             }
         } catch(e) { sessionStorage.removeItem('mefamdev_session'); }
     }

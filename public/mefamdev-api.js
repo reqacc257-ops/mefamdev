@@ -17,6 +17,8 @@ const API_BASE = window.location.origin + '/api';
 const MefamAPI = {
   // ── Auth ───────────────────────────────────────────────────────────────────
   async loginStaff(username, password) {
+    sessionStorage.removeItem('mefamdev_token');
+    sessionStorage.removeItem('mefamdev_session');
     const res = await this._post('/auth/login', { username, password });
     if (res.token) sessionStorage.setItem('mefamdev_token', res.token);
     if (res.user)  sessionStorage.setItem('mefamdev_session', JSON.stringify({ ...res.user, loginTime: Date.now() }));
@@ -24,6 +26,8 @@ const MefamAPI = {
   },
 
   async loginApplicant(refNo, name) {
+    sessionStorage.removeItem('mefamdev_token');
+    sessionStorage.removeItem('mefamdev_session');
     const res = await this._post('/auth/applicant', { refNo, name });
     if (res.token) sessionStorage.setItem('mefamdev_token', res.token);
     if (res.user)  sessionStorage.setItem('mefamdev_session', JSON.stringify({ ...res.user, loginTime: Date.now() }));

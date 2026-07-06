@@ -19,6 +19,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 
+// Prevent browsers and phones from serving stale login/dashboard pages
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html') || req.path.endsWith('.js') || req.path.endsWith('.css')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
+
 // Serve static files from the public/ folder
 app.use(express.static(path.join(__dirname, 'public')));
 
