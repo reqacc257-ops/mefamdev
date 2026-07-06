@@ -19,6 +19,12 @@ function parseApp(row) {
   if (!row) return null;
   return {
     ...row,
+    name: row.name || '',
+    status: row.status || 'Pending Review',
+    school: row.school || '',
+    grade: row.grade || '',
+    sy: row.sy || '',
+    barangay: row.barangay || '',
     family_members: JSON.parse(row.family_members || '[]'),
     properties:     JSON.parse(row.properties     || '[]'),
     can_provide:    JSON.parse(row.can_provide     || '[]'),
@@ -31,7 +37,7 @@ function parseApp(row) {
     totalIncome:   row.total_income,
     totalExpense:  row.total_expense,
     whyScholar:    row.why_scholar,
-    date:          row.date_label,
+    date:          row.date_label || row.date || '—',
   };
 }
 

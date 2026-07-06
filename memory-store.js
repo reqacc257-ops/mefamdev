@@ -205,6 +205,18 @@ class QueryBuilder {
     return clauses;
   }
 
+  normalizeComparableValue(value) {
+    if (value === undefined || value === null) return value;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '') return '';
+      if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
+      if (trimmed.toLowerCase() === 'true') return true;
+      if (trimmed.toLowerCase() === 'false') return false;
+    }
+    return value;
+  }
+
   matchesWhere(row, whereClause, params) {
     if (!whereClause.length) return true;
     const values = this.asValueArray(params);
@@ -215,7 +227,9 @@ class QueryBuilder {
       } else {
         expected = clause.value;
       }
-      return row[clause.column] === expected;
+      const normalizedExpected = this.normalizeComparableValue(expected);
+      const normalizedRowValue = this.normalizeComparableValue(row[clause.column]);
+      return normalizedRowValue === normalizedExpected;
     });
   }
 

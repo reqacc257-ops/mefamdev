@@ -407,8 +407,14 @@ window.onload = function () {
 
 async function loadApplicantData(session) {
     try {
-        const app = await MefamAPI.getApplication(session.appId);
+        let app = await MefamAPI.getApplication(session.appId);
+        if (!app) {
+            const storedApps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
+            app = storedApps.find(item => String(item.id) === String(session.appId)) || null;
+        }
         if (!app) { showNotFound(); return; }
+
+        app = normalizeApplication(app, session);
 
         if (session.isAdminPreview) {
             const banner = document.createElement('div');
@@ -432,16 +438,39 @@ function showNotFound() {
     document.getElementById('notFoundView').style.display = 'block';
 }
 
+function normalizeApplication(app, session = {}) {
+    const source = app || {};
+    const normalizedStatus = normalizeStatus(source.status || source.applicationStatus);
+    return {
+        ...source,
+        id: source.id || session.appId || null,
+        name: source.name || source.fullName || source.full_name || session.name || 'Applicant',
+        status: normalizedStatus,
+        school: source.school || source.nextSchool || '',
+        grade: source.grade || source.nextGrade || '',
+        sy: source.sy || source.schoolYear || '',
+        barangay: source.barangay || source.barangayName || '',
+        date: source.date || source.date_label || source.dateLabel || source.submittedAt || '—',
+    };
+}
+
+function normalizeStatus(status) {
+    const value = String(status || '').trim();
+    return ['Pending Review', 'Interviewing', 'Accepted', 'Rejected'].includes(value) ? value : 'Pending Review';
+}
+
 function renderPortal(app, session) {
+    const appData = normalizeApplication(app, session);
+
     // Top bar
-    const firstName = app.name ? app.name.split(',')[0].trim() : 'Applicant';
+    const firstName = String(appData.name || 'Applicant').split(',')[0].trim() || 'Applicant';
     document.getElementById('ucAvatar').innerText = firstName.charAt(0).toUpperCase();
     document.getElementById('ucName').innerText = firstName;
 
     // Hero
-    document.getElementById('heroName').innerText = app.name;
-    document.getElementById('heroRef').innerText = `Reference: APP-${app.id}`;
-    document.getElementById('heroSchool').innerText = `${app.grade} · ${app.school} · S.Y. ${app.sy || '—'}`;
+    document.getElementById('heroName').innerText = appData.name || 'Applicant';
+    document.getElementById('heroRef').innerText = `Reference: APP-${appData.id}`;
+    document.getElementById('heroSchool').innerText = `${appData.grade || '—'} · ${appData.school || '—'} · S.Y. ${appData.sy || '—'}`;
 
     // Status config
     const statusMap = {
@@ -450,18 +479,19 @@ function renderPortal(app, session) {
         'Accepted':        { icon: '🎓', color: '#27ae60', bg: 'linear-gradient(135deg, #1a3a2e, #1e5735)', label: 'Accepted Scholar' },
         'Rejected':        { icon: '❌', color: '#e74c3c', bg: 'linear-gradient(135deg, #3a1a1a, #5c2a2a)', label: 'Not Accepted' },
     };
-    const cfg = statusMap[app.status] || statusMap['Pending Review'];
+    const normalizedStatus = normalizeStatus(appData.status);
+    const cfg = statusMap[normalizedStatus] || statusMap['Pending Review'];
     document.getElementById('statusHero').style.background = cfg.bg;
     document.getElementById('heroIcon').innerText = cfg.icon;
     document.getElementById('heroStatus').innerText = cfg.label;
 
     // Details
-    document.getElementById('dRef').innerText = `APP-${app.id}`;
-    document.getElementById('dSY').innerText = app.sy || '—';
-    document.getElementById('dDate').innerText = app.date || '—';
-    document.getElementById('dSchool').innerText = app.school || '—';
-    document.getElementById('dGrade').innerText = app.grade || '—';
-    document.getElementById('dBrgy').innerText = app.barangay || '—';
+    document.getElementById('dRef').innerText = `APP-${appData.id}`;
+    document.getElementById('dSY').innerText = appData.sy || '—';
+    document.getElementById('dDate').innerText = appData.date || '—';
+    document.getElementById('dSchool').innerText = appData.school || '—';
+    document.getElementById('dGrade').innerText = appData.grade || '—';
+    document.getElementById('dBrgy').innerText = appData.barangay || '—';
 
     const statusBadgeHTML = {
         'Pending Review': `<span class="sbadge sbadge-pending">Pending Review</span>`,
@@ -469,11 +499,11 @@ function renderPortal(app, session) {
         'Accepted':       `<span class="sbadge sbadge-accepted">Accepted ✓</span>`,
         'Rejected':       `<span class="sbadge sbadge-rejected">Not Accepted</span>`,
     };
-    document.getElementById('dStatus').innerHTML = statusBadgeHTML[app.status] || `<span class="sbadge sbadge-pending">${app.status}</span>`;
+    document.getElementById('dStatus').innerHTML = statusBadgeHTML[normalizedStatus] || `<span class="sbadge sbadge-pending">${normalizedStatus}</span>`;
 
     // Progress steps
     const statusOrder = { 'Pending Review': 1, 'Interviewing': 2, 'Accepted': 4, 'Rejected': 4 };
-    const curStep = statusOrder[app.status] || 1;
+    const curStep = statusOrder[normalizedStatus] || 1;
     const steps = ['submitted','review','interview','decision','scholar'];
     steps.forEach((s, i) => {
         const el = document.getElementById(`step-${s}`);
@@ -491,7 +521,7 @@ function renderPortal(app, session) {
 
     // Timeline
     const timelineBody = document.getElementById('timelineBody');
-    const events = buildTimeline(app);
+    const events = buildTimeline(appData);
     timelineBody.innerHTML = events.map((e, i) => `
         <div class="tl-item">
             <div class="tl-dot-wrap">
