@@ -1049,7 +1049,24 @@
         if (lbl) lbl.innerText = currentLang === 'tl' ? `Human Verification: Ano ang ${num1} + ${num2}?` : `Human Verification: What is ${num1} + ${num2}?`;
     }
 
-
+/* ── Cooldown ── */
+    function checkSpamCooldown() {
+        const last = localStorage.getItem('mefamdev_last_submit');
+        if (!last) return false;
+        const elapsed = Date.now() - parseInt(last);
+        if (elapsed < COOLDOWN_MS) {
+            const mins = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
+            document.getElementById('cooldownWarning').innerText = currentLang === 'tl'
+                ? `SPAM PROTECTION: Subukan muli pagkatapos ng ${mins} minuto.`
+                : `SPAM PROTECTION: You can resubmit in ${mins} minutes.`;
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = 'Please wait...';
+            return true;
+        }
+        return false;
+    }
+    
 
     function collectSubmittedFields() {
         const payload = {};
