@@ -123,6 +123,11 @@ const MefamAPI = {
     return this._put(`/documents/${appId}/${docKey}`, { status, note });
   },
 
+  // ── Admin: reset applicant password
+  async resetApplicationPassword(id, password) {
+    return this._post(`/applications/${id}/reset-password`, { password });
+  },
+
   // ── Communications ────────────────────────────────────────────────────────
   async getAnnouncements() { return this._get('/comms'); },
   async postAnnouncement(subject, message, target, tag) {
