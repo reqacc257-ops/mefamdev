@@ -25,10 +25,12 @@ const MefamAPI = {
     return res;
   },
 
-  async loginApplicant(refNo, name, password) {
+  async loginApplicant(refNo, name, password, username) {
     sessionStorage.removeItem('mefamdev_token');
     sessionStorage.removeItem('mefamdev_session');
-    const res = await this._post('/auth/applicant', { refNo, name, password });
+    const payload = { refNo, name, password };
+    if (username) payload.username = username;
+    const res = await this._post('/auth/applicant', payload);
     if (res.token) sessionStorage.setItem('mefamdev_token', res.token);
     if (res.user)  sessionStorage.setItem('mefamdev_session', JSON.stringify({ ...res.user, loginTime: Date.now() }));
     return res;
@@ -62,7 +64,7 @@ const MefamAPI = {
   async submitApplication(data) {
     const res = await this._post('/public/apply', data, false);
     if (res.id) {
-      const loginRes = await this.loginApplicant(res.id, data.name, data.password);
+      const loginRes = await this.loginApplicant(res.id, data.name, data.password, data.username);
       if (loginRes?.token) {
         sessionStorage.setItem('mefamdev_token', loginRes.token);
       }

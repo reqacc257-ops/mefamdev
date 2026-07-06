@@ -335,10 +335,10 @@
             </div>
         </div>
 
-        <!-- Step 2b: Applicant name verification (shown when APP- detected) -->
+        <!-- Step 2b: Applicant verification (shown for applicant portal access) -->
         <div id="applicantNameField" style="display:none;">
             <div class="form-group">
-                <label>Full Name (for verification)</label>
+                <label>Full Name (optional for verification)</label>
                 <div class="input-wrap">
                     <span class="input-icon">📋</span>
                     <input type="text" id="unifiedName"
@@ -446,18 +446,18 @@ function onUsernameInput(val) {
         document.getElementById('hintApplicant').style.display = 'none';
         document.getElementById('unifiedPassword').focus();
 
-    } else if (isAppRef) {
+    } else {
         detectedType = 'applicant';
         const cleanId = val.trim().replace(/^app-/i, '');
         const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-        const found = apps.find(a => String(a.id) === cleanId);
+        const found = apps.find(a => String(a.id) === cleanId || (a.username && a.username.toLowerCase() === v));
 
         if (found) {
             showDetected('📋 Applicant — APP-' + found.id, '#e8f5e9', '#1b5e20', '#81c784');
             document.getElementById('usernameHint').textContent = '✓ Application found: ' + found.name;
             document.getElementById('usernameHint').style.color = '#27ae60';
         } else {
-            showDetected('📋 Applicant Reference', '#fff8e1', '#6d4c00', '#ffd54f');
+            showDetected('📋 Applicant Portal', '#fff8e1', '#6d4c00', '#ffd54f');
             document.getElementById('usernameHint').textContent = '';
         }
         document.getElementById('applicantNameField').style.display = 'block';
@@ -539,9 +539,10 @@ async function doApplicantLogin(ref) {
     const nameInput = document.getElementById('unifiedName').value.trim();
     const pwInput = (document.getElementById('unifiedAppPassword')?.value || '').trim();
     const cleanId = ref.replace(/^app-/i, '').trim();
+    const username = /^\d+$/.test(cleanId) ? '' : cleanId;
 
     try {
-        const res = await MefamAPI.loginApplicant(cleanId, nameInput, pwInput);
+        const res = await MefamAPI.loginApplicant(cleanId, nameInput, pwInput, username);
         if (res?.token) {
             showLoading('Welcome!', () => {
                 window.location.assign('/applicant_portal.html');

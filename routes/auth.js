@@ -33,18 +33,25 @@ router.post('/login', (req, res) => {
 
 // ── Applicant portal login ────────────────────────────────────────────────────
 router.post('/applicant', (req, res) => {
-  const { refNo, name, password } = req.body;
-  if (!refNo) return res.status(400).json({ error: 'Reference number required' });
+  const { refNo, name, password, username } = req.body;
+  const identifier = String(username || refNo || '').trim();
+  if (!identifier) return res.status(400).json({ error: 'Reference number or portal username required' });
 
-  // Accept "APP-1001" or just "1001"
-  const cleanId = String(refNo).replace(/^app-/i, '').trim();
-  const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(cleanId);
+  let app = null;
+  if (username) {
+    const rows = db.prepare('SELECT * FROM applications').all();
+    app = rows.find(row => String(row.portal_username || '').toLowerCase() === identifier.toLowerCase());
+  } else {
+    // Accept "APP-1001" or just "1001"
+    const cleanId = String(refNo).replace(/^app-/i, '').trim();
+    app = db.prepare('SELECT * FROM applications WHERE id = ?').get(cleanId);
+  }
 
   if (!app) return res.status(404).json({ error: 'Application not found' });
 
   // Lenient name check (if provided)
   if (name && name.trim().length > 2) {
-    const fn = app.name.toLowerCase();
+    const fn = (app.name || '').toLowerCase();
     const parts = fn.split(/[\s,]+/);
     const input = name.trim().toLowerCase();
     const match = parts.some(p => p && input.includes(p)) || fn.includes(input);
