@@ -62,6 +62,10 @@ const MefamAPI = {
   async submitApplication(data) {
     const res = await this._post('/public/apply', data, false);
     if (res.id) {
+      const loginRes = await this.loginApplicant(res.id, data.name);
+      if (loginRes?.token) {
+        sessionStorage.setItem('mefamdev_token', loginRes.token);
+      }
       // Store a temporary session so applicant lands on portal
       sessionStorage.setItem('mefamdev_session', JSON.stringify({
         type: 'applicant', appId: res.id, name: data.name, loginTime: Date.now()
@@ -128,9 +132,17 @@ const MefamAPI = {
   _token() { return sessionStorage.getItem('mefamdev_token') || ''; },
 
   async _get(path) {
-    const r = await fetch(API_BASE + path, {
-      headers: { 'Authorization': 'Bearer ' + this._token() }
-    });
+    let token = this._token();
+    const headers = { 'Authorization': 'Bearer ' + token };
+    if (!token) {
+      const session = this.getSession();
+      if (session?.type === 'applicant' && session?.appId) {
+        const loginRes = await this.loginApplicant(session.appId, session.name || '');
+        token = loginRes?.token || '';
+        if (token) headers.Authorization = 'Bearer ' + token;
+      }
+    }
+    const r = await fetch(API_BASE + path, { headers });
     if (r.status === 401) { this.logout(); return; }
     return r.json();
   },
