@@ -234,6 +234,12 @@
         @media (max-width: 600px) {
             .doc-body { padding: 20px 14px; }
             .meta-row, .meta-row.four, .summary-grid { grid-template-columns: 1fr 1fr; }
+            .toolbar { padding: 12px 16px; flex-wrap: wrap; }
+            .toolbar .btn { flex: 1; justify-content: center; }
+            .prefill-bar select { min-width: 0; width: 100%; }
+        }
+        @media (max-width: 420px) {
+            .meta-row, .meta-row.four, .summary-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>

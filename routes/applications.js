@@ -86,7 +86,7 @@ router.patch('/:id', (req, res) => {
       const contact = app.contact || '';
       const barangay = app.barangay || '';
       const income = app.total_income || '';
-      const benefits = (app.properties || []).join(', ') || '';
+      const benefits = JSON.parse(app.properties || '[]').join(', ') || '';
 
       db.prepare(`
         INSERT INTO families (surname, guardian, barangay, contact, income, bracket, benefits)
