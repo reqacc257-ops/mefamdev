@@ -19,24 +19,14 @@ function hashPassword(pw) {
 // ── Staff login ───────────────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
-  }
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  if (!password) return res.status(400).json({ error: 'Password required' });
 
-  const staff = db.prepare('SELECT * FROM staff WHERE username = ?').get(username.toLowerCase().trim());
-  if (!staff || staff.password !== hashPassword(password)) {
-    return res.status(401).json({ error: 'Invalid username or password' });
-  }
+  const staff = db.prepare('SELECT * FROM staff WHERE username = ?').get(username);
+  if (!staff) return res.status(401).json({ error: 'Invalid username or password' });
+  if (staff.password !== hashPassword(password)) return res.status(401).json({ error: 'Invalid username or password' });
 
-  const payload = {
-    type: 'staff',
-    id: staff.id,
-    username: staff.username,
-    role: staff.role,
-    name: staff.name,
-    title: staff.title,
-    initials: staff.initials,
-  };
+  const payload = { type: 'staff', id: staff.id, username: staff.username, role: staff.role, name: staff.name };
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
   res.json({ token, user: payload });
 });

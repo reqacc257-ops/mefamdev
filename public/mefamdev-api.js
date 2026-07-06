@@ -25,10 +25,10 @@ const MefamAPI = {
     return res;
   },
 
-  async loginApplicant(refNo, name) {
+  async loginApplicant(refNo, name, password) {
     sessionStorage.removeItem('mefamdev_token');
     sessionStorage.removeItem('mefamdev_session');
-    const res = await this._post('/auth/applicant', { refNo, name });
+    const res = await this._post('/auth/applicant', { refNo, name, password });
     if (res.token) sessionStorage.setItem('mefamdev_token', res.token);
     if (res.user)  sessionStorage.setItem('mefamdev_session', JSON.stringify({ ...res.user, loginTime: Date.now() }));
     return res;
@@ -62,7 +62,7 @@ const MefamAPI = {
   async submitApplication(data) {
     const res = await this._post('/public/apply', data, false);
     if (res.id) {
-      const loginRes = await this.loginApplicant(res.id, data.name);
+      const loginRes = await this.loginApplicant(res.id, data.name, data.password);
       if (loginRes?.token) {
         sessionStorage.setItem('mefamdev_token', loginRes.token);
       }
@@ -122,6 +122,15 @@ const MefamAPI = {
   async setDocumentStatus(appId, docKey, status, note) {
     return this._put(`/documents/${appId}/${docKey}`, { status, note });
   },
+
+  // ── Admin: reset applicant password
+  async resetApplicationPassword(id, password) {
+    return this._post(`/applications/${id}/reset-password`, { password });
+  },
+
+  // ── Admin: submission cooldown
+  async getSubmitCooldown() { return this._get('/applications/cooldown'); },
+  async setSubmitCooldown(minutes) { return this._post('/applications/cooldown', { minutes }); },
 
   // ── Communications ────────────────────────────────────────────────────────
   async getAnnouncements() { return this._get('/comms'); },

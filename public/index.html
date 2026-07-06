@@ -327,6 +327,7 @@
                         placeholder="Enter your password"
                         autocomplete="current-password"
                         onkeydown="if(event.key==='Enter') proceedLogin()">
+                    <button type="button" onclick="toggleUnifiedPassword()" id="toggleUnifiedPw" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; cursor:pointer;">Show</button>
                 </div>
                 <p style="font-size:.74rem; color:#bbb; margin-top:5px; text-align:right; cursor:pointer;">
                     Forgot password? Contact director.
@@ -343,6 +344,16 @@
                     <input type="text" id="unifiedName"
                         placeholder="As submitted in your application"
                         onkeydown="if(event.key==='Enter') proceedLogin()">
+                </div>
+            </div>
+            <div id="applicantPasswordField" style="display:none;">
+                <div class="form-group">
+                    <label>Application Password (if set)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🔒</span>
+                            <input type="password" id="unifiedAppPassword" placeholder="If you set a password when applying" onkeydown="if(event.key==='Enter') proceedLogin()">
+                            <button type="button" onclick="toggleUnifiedAppPassword()" id="toggleUnifiedAppPw" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; cursor:pointer;">Show</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -408,6 +419,7 @@ function onUsernameInput(val) {
     // Reset
     document.getElementById('staffPasswordField').style.display  = 'none';
     document.getElementById('applicantNameField').style.display  = 'none';
+    document.getElementById('applicantPasswordField').style.display = 'none';
     document.getElementById('detectedRole').style.display        = 'none';
     document.getElementById('hintStaff').style.display           = 'block';
     document.getElementById('hintApplicant').style.display       = 'none';
@@ -449,6 +461,7 @@ function onUsernameInput(val) {
             document.getElementById('usernameHint').textContent = '';
         }
         document.getElementById('applicantNameField').style.display = 'block';
+        document.getElementById('applicantPasswordField').style.display = 'block';
         document.getElementById('loginBtn').textContent  = 'Track My Application →';
         document.getElementById('loginBtn').style.background = 'var(--teal)';
         document.getElementById('hintStaff').style.display = 'none';
@@ -524,10 +537,11 @@ async function doStaffLogin(username) {
 
 async function doApplicantLogin(ref) {
     const nameInput = document.getElementById('unifiedName').value.trim();
+    const pwInput = (document.getElementById('unifiedAppPassword')?.value || '').trim();
     const cleanId = ref.replace(/^app-/i, '').trim();
 
     try {
-        const res = await MefamAPI.loginApplicant(cleanId, nameInput);
+        const res = await MefamAPI.loginApplicant(cleanId, nameInput, pwInput);
         if (res?.token) {
             showLoading('Welcome!', () => {
                 window.location.assign('/applicant_portal.html');
@@ -556,6 +570,22 @@ function showLoading(msg, callback) {
     document.getElementById('loadingMsg').innerText = msg;
     document.getElementById('loadingScreen').classList.add('show');
     setTimeout(callback, 1200);
+}
+
+function toggleUnifiedPassword() {
+    const el = document.getElementById('unifiedPassword');
+    const btn = document.getElementById('toggleUnifiedPw');
+    if (!el) return;
+    if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
+    else { el.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function toggleUnifiedAppPassword() {
+    const el = document.getElementById('unifiedAppPassword');
+    const btn = document.getElementById('toggleUnifiedAppPw');
+    if (!el) return;
+    if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
+    else { el.type = 'password'; btn.textContent = 'Show'; }
 }
 
 /* ── Auto-redirect if already logged in ── */

@@ -12,7 +12,11 @@
 
 const router = require('express').Router();
 const db = require('../db');
+const crypto = require('crypto');
 const { requireRole } = require('../middleware/auth');
+
+// Runtime toggle for submission cooldown (minutes). 0 = disabled.
+let submitCooldownMinutes = 0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function parseApp(row) {
@@ -111,12 +115,12 @@ function submitPublicApplication(req, res) {
   const b = req.body;
   if (!b.name || !b.sy) return res.status(400).json({ error: 'Name and school year required' });
 
-  // Cooldown: 1 submission per contact number per 5 minutes
-  if (b.contact) {
+  // Server-side submission cooldown (minutes). Uses runtime value `submitCooldownMinutes` (0 = disabled).
+  if (submitCooldownMinutes > 0 && b.contact) {
     const recent = db.prepare(
-      "SELECT id FROM applications WHERE contact = ? AND submitted_at > datetime('now', '-5 minutes')"
+      `SELECT id FROM applications WHERE contact = ? AND submitted_at > datetime('now', '-${submitCooldownMinutes} minutes')`
     ).get(b.contact);
-    if (recent) return res.status(429).json({ error: 'Please wait 5 minutes before resubmitting.' });
+    if (recent) return res.status(429).json({ error: `Please wait ${submitCooldownMinutes} minutes before resubmitting.` });
   }
 
   const stmt = db.prepare(`
@@ -124,12 +128,12 @@ function submitPublicApplication(req, res) {
       (sy, name, address, barangay, dob, age, gender, contact, religion, birthplace,
        talents, clubs, ambition, living_with, edu_level, prev_grade, prev_school,
        school, grade, degree, why_scholar, total_income, total_expense,
-       family_members, properties, can_provide, status, date_label)
+       family_members, properties, can_provide, status, date_label, password_hash)
     VALUES
       (@sy, @name, @address, @barangay, @dob, @age, @gender, @contact, @religion, @birthplace,
        @talents, @clubs, @ambition, @living_with, @edu_level, @prev_grade, @prev_school,
        @school, @grade, @degree, @why_scholar, @total_income, @total_expense,
-       @family_members, @properties, @can_provide, 'Pending Review', @date_label)
+       @family_members, @properties, @can_provide, 'Pending Review', @date_label, @password_hash)
   `);
 
   const info = stmt.run({
@@ -160,6 +164,7 @@ function submitPublicApplication(req, res) {
     properties:    JSON.stringify(b.properties    || []),
     can_provide:   JSON.stringify(b.canProvide    || []),
     date_label:    b.date || b.dateLabel || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    password_hash: b.password ? crypto.createHash('sha256').update(String(b.password)).digest('hex') : null
   });
 
   res.json({ ok: true, id: info.lastInsertRowid });
@@ -167,3 +172,33 @@ function submitPublicApplication(req, res) {
 
 module.exports = router;
 module.exports.submitPublicApplication = submitPublicApplication;
+
+// ── Admin: reset / set applicant password ───────────────────────────────────
+router.post('/:id/reset-password', requireRole('director','program','finance'), (req, res) => {
+  const id = req.params.id;
+  const newPass = req.body.password;
+  const app = db.prepare('SELECT id FROM applications WHERE id = ?').get(id);
+  if (!app) return res.status(404).json({ error: 'Application not found' });
+
+  if (newPass === null || newPass === undefined || newPass === '') {
+    // Clear password
+    db.prepare('UPDATE applications SET password_hash = NULL WHERE id = ?').run(id);
+    return res.json({ ok: true, message: 'Password cleared' });
+  }
+
+  const hash = crypto.createHash('sha256').update(String(newPass)).digest('hex');
+  db.prepare('UPDATE applications SET password_hash = ? WHERE id = ?').run(hash, id);
+  res.json({ ok: true });
+});
+
+// ── Admin: get/set submission cooldown minutes ──────────────────────────────
+router.get('/cooldown', requireRole('director','program','finance'), (req, res) => {
+  res.json({ minutes: submitCooldownMinutes });
+});
+
+router.post('/cooldown', requireRole('director','program','finance'), (req, res) => {
+  const mins = parseInt(req.body.minutes, 10);
+  if (isNaN(mins) || mins < 0) return res.status(400).json({ error: 'Invalid minutes' });
+  submitCooldownMinutes = mins;
+  res.json({ ok: true, minutes: submitCooldownMinutes });
+});
