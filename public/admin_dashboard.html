@@ -555,6 +555,17 @@
                 </div>
             </div>
 
+            <div class="grid-2eq" style="margin-bottom:20px;" data-roles="director,edu,program">
+                <div class="card">
+                    <div class="card-title">Scholar Risk Alerts</div>
+                    <div id="monitoringAlerts" class="empty-state"><div class="empty-icon">⚠️</div><p>Loading alerts…</p></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Monitoring Summary</div>
+                    <div id="monitoringSummary" style="font-size:.95rem; color:var(--text-muted); line-height:1.7;"></div>
+                </div>
+            </div>
+
             <!-- Recent apps table -->
             <div class="card" data-roles="director,program">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -1343,7 +1354,7 @@ function applyRBAC() {
 ══════════════════════════════════════ */
 async function loadAllData() {
     try {
-        const [apps, families, announcements, events, fundLog, disbLog, intakeSheets, assessments, absences, grades] = await Promise.all([
+        const [apps, families, announcements, events, fundLog, disbLog, intakeSheets, assessments, absences, grades, monitoring] = await Promise.all([
             MefamAPI.getApplications(),
             MefamAPI.getFamilies(),
             MefamAPI.getAnnouncements(),
@@ -1354,6 +1365,7 @@ async function loadAllData() {
             MefamAPI.getAssessments(),
             MefamAPI.getAbsences(),
             MefamAPI.getGrades(),
+            MefamAPI.getMonitoring(),
         ]);
 
         const appList = Array.isArray(apps) ? apps : [];
@@ -1415,6 +1427,7 @@ async function loadAllData() {
         const absenteeEl = document.getElementById('prog-absentee');
         if (absenteeEl) absenteeEl.innerText = absentee;
 
+        renderMonitoring(monitoring);
         renderRecentApps(appList);
         renderFullAppsTable(appList);
         renderPipeline(appList);
@@ -1497,6 +1510,34 @@ function deleteRecord(key, id) {
     records = records.filter(r => r.id !== id);
     localStorage.setItem(key, JSON.stringify(records));
     loadSavedRecords();
+}
+
+function renderMonitoring(monitoring) {
+    const alertsEl = document.getElementById('monitoringAlerts');
+    const summaryEl = document.getElementById('monitoringSummary');
+    if (!alertsEl || !summaryEl) return;
+
+    const summary = monitoring && typeof monitoring === 'object' ? monitoring : { activeScholars: 0, atRisk: 0, alertLevel: 'low', alerts: [] };
+    const alerts = Array.isArray(summary.alerts) ? summary.alerts : [];
+
+    if (!alerts.length) {
+        alertsEl.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No active risk alerts at the moment.</p></div>`;
+    } else {
+        alertsEl.innerHTML = alerts.map(alert => `
+            <div class="ann-item" style="border-left-color:${alert.severity === 'high' ? 'var(--red)' : 'var(--orange)'}">
+                <div class="ann-tag">${alert.type === 'academic' ? 'Academic' : 'Attendance'}</div>
+                <div class="ann-title">${alert.message}</div>
+                <div class="ann-meta"><span>${alert.severity === 'high' ? 'High priority' : 'Needs follow-up'}</span></div>
+            </div>`).join('');
+    }
+
+    summaryEl.innerHTML = `
+        <div style="display:grid; gap:8px;">
+            <div><strong>Active scholars:</strong> ${summary.activeScholars || 0}</div>
+            <div><strong>At-risk cases:</strong> ${summary.atRisk || 0}</div>
+            <div><strong>Alert level:</strong> <span class="badge ${summary.alertLevel === 'high' ? 'badge-red' : summary.alertLevel === 'medium' ? 'badge-orange' : 'badge-green'}">${summary.alertLevel || 'low'}</span></div>
+            <div style="margin-top:4px; color:var(--text);">This section highlights academic and attendance problems so staff can act earlier.</div>
+        </div>`;
 }
 
 /* ── Recent apps (dashboard) ── */
