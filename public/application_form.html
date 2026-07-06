@@ -750,6 +750,12 @@
                 <div id="captchaError" class="error-msg translatable" data-tl="❌ Mali ang sagot. Subukan muli." data-en="❌ Wrong answer. Try again.">❌ Mali ang sagot.</div>
             </div>
 
+            <div style="margin-top:12px;">
+                <label class="field-label">Set a password (optional)</label>
+                <input type="password" id="appPassword" placeholder="Create a password to access your application">
+                <p style="font-size:.8rem; color:#666; margin-top:6px;">If you set a password, you'll need it (with your reference number and full name) to access your application.</p>
+            </div>
+
             <p id="cooldownWarning"></p>
 
             <button type="submit" class="btn btn-submit" id="submitBtn">
@@ -1049,7 +1055,7 @@
         if (lbl) lbl.innerText = currentLang === 'tl' ? `Human Verification: Ano ang ${num1} + ${num2}?` : `Human Verification: What is ${num1} + ${num2}?`;
     }
 
-/* ── Cooldown ── */
+    /* ── Cooldown ── */
     function checkSpamCooldown() {
         const last = localStorage.getItem('mefamdev_last_submit');
         if (!last) return false;
@@ -1066,7 +1072,6 @@
         }
         return false;
     }
-    
 
     function collectSubmittedFields() {
         const payload = {};
@@ -1167,12 +1172,18 @@
             date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         };
 
+        // include password if provided
+        const pw = (document.getElementById('appPassword')?.value || '').trim();
+        if (pw) data.password = pw;
+
         try {
             const res = await MefamAPI.submitApplication(data);
             if (res?.ok) {
                 const appId = res.id || data.id;
                 const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-                apps.unshift({ ...data, id: appId });
+                const stored = { ...data, id: appId };
+                if (stored.password) delete stored.password;
+                apps.unshift(stored);
                 localStorage.setItem('mefamdev_apps', JSON.stringify(apps));
                 localStorage.setItem('mefamdev_last_submit', Date.now());
                 document.getElementById('refNumberDisplay').innerText = 'APP-' + appId;
