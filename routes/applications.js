@@ -127,9 +127,9 @@ function submitPublicApplication(req, res) {
        family_members, properties, can_provide, status, date_label)
     VALUES
       (@sy, @name, @address, @barangay, @dob, @age, @gender, @contact, @religion, @birthplace,
-       @talents, @clubs, @ambition, @livingWith, @eduLevel, @prevGrade, @prevSchool,
-       @school, @grade, @degree, @whyScholar, @totalIncome, @totalExpense,
-       @familyMembers, @properties, @canProvide, 'Pending Review', @dateLabel)
+       @talents, @clubs, @ambition, @living_with, @edu_level, @prev_grade, @prev_school,
+       @school, @grade, @degree, @why_scholar, @total_income, @total_expense,
+       @family_members, @properties, @can_provide, 'Pending Review', @date_label)
   `);
 
   const info = stmt.run({
@@ -146,20 +146,20 @@ function submitPublicApplication(req, res) {
     talents:       b.talents        || '',
     clubs:         b.clubs          || '',
     ambition:      b.ambition       || '',
-    livingWith:    b.livingWith     || '',
-    eduLevel:      b.eduLevel       || '',
-    prevGrade:     b.prevGrade      || '',
-    prevSchool:    b.prevSchool     || '',
+    living_with:   b.livingWith     || '',
+    edu_level:     b.eduLevel       || '',
+    prev_grade:    b.prevGrade      || '',
+    prev_school:   b.prevSchool     || '',
     school:        b.school         || '',
     grade:         b.grade          || '',
     degree:        b.degree         || '',
-    whyScholar:    b.whyScholar     || '',
-    totalIncome:   b.totalIncome    || '0',
-    totalExpense:  b.totalExpense   || '0',
-    familyMembers: JSON.stringify(b.familyMembers || []),
+    why_scholar:   b.whyScholar     || '',
+    total_income:  b.totalIncome    || '0',
+    total_expense: b.totalExpense   || '0',
+    family_members: JSON.stringify(b.familyMembers || []),
     properties:    JSON.stringify(b.properties    || []),
-    canProvide:    JSON.stringify(b.canProvide    || []),
-    dateLabel:     new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    can_provide:   JSON.stringify(b.canProvide    || []),
+    date_label:    b.date || b.dateLabel || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   });
 
   res.json({ ok: true, id: info.lastInsertRowid });
