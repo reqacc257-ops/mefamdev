@@ -546,6 +546,9 @@ async function renderRequirements(appId) {
     let items;
     try {
         items = await MefamAPI.getDocuments(appId);
+        if (!Array.isArray(items) && sessionStorage.getItem('mefamdev_token')) {
+            items = await MefamAPI.getDocuments(appId);
+        }
     } catch (e) {
         items = null;
     }
@@ -571,7 +574,12 @@ async function renderRequirements(appId) {
         }),
     ];
 
+    const previewNote = sessionStorage.getItem('mefamdev_session') && JSON.parse(sessionStorage.getItem('mefamdev_session') || '{}').isAdminPreview
+        ? '<p style="font-size:.78rem; color:#7a5a00; margin-top:8px; padding:8px 10px; background:#fff7db; border-radius:7px;">🔎 Previewing the applicant’s submitted requirements and current checklist status.</p>'
+        : '';
+
     el.innerHTML = rows.join('') + `
+        ${previewNote}
         <p style="font-size:.8rem; color:var(--muted); margin-top:12px; padding:10px; background:#f7f9fb; border-radius:7px;">
             📌 <strong>Note:</strong> Please bring all original documents and photocopies during your scheduled interview. Contact MEFAMDEV for scheduling.
         </p>`;
