@@ -443,7 +443,6 @@ function onUsernameInput(val) {
         document.getElementById('loginBtn').style.background = 'var(--navy)';
         document.getElementById('hintStaff').style.display = 'block';
         document.getElementById('hintApplicant').style.display = 'none';
-        document.getElementById('unifiedPassword').focus();
 
     } else if (isAppRef) {
         detectedType = 'applicant';
@@ -465,7 +464,6 @@ function onUsernameInput(val) {
         document.getElementById('loginBtn').style.background = 'var(--teal)';
         document.getElementById('hintStaff').style.display = 'none';
         document.getElementById('hintApplicant').style.display = 'block';
-        document.getElementById('unifiedName').focus();
     } else {
         const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
         const found = apps.find(a => (a.username || '').toLowerCase() === v);
