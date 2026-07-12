@@ -478,7 +478,6 @@ function onUsernameInput(val) {
             document.getElementById('loginBtn').style.background = 'var(--teal)';
             document.getElementById('hintStaff').style.display = 'none';
             document.getElementById('hintApplicant').style.display = 'block';
-            document.getElementById('unifiedName').focus();
         } else {
             detectedType = 'applicant';
             showDetected('📋 Applicant Portal', '#fff8e1', '#6d4c00', '#ffd54f');
@@ -490,7 +489,6 @@ function onUsernameInput(val) {
             document.getElementById('loginBtn').style.background = 'var(--teal)';
             document.getElementById('hintStaff').style.display = 'none';
             document.getElementById('hintApplicant').style.display = 'block';
-            document.getElementById('unifiedName').focus();
         }
     }
 }
