@@ -19,6 +19,10 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'Required',
     note TEXT DEFAULT '',
     updated_at TEXT DEFAULT (datetime('now')),
+    file_name TEXT DEFAULT '',
+    file_type TEXT DEFAULT '',
+    file_data TEXT DEFAULT '',
+    upload_method TEXT DEFAULT '',
     UNIQUE(app_id, doc_key)
   )
 `);
@@ -35,7 +39,7 @@ const REQUIRED_DOCS = [
 
 function buildChecklist(appId) {
   const rows = db.prepare(
-    'SELECT doc_key, status, note, updated_at FROM document_status WHERE app_id = ?'
+    'SELECT doc_key, status, note, updated_at, file_name, file_type, file_data, upload_method FROM document_status WHERE app_id = ?'
   ).all(appId);
   const map = {};
   rows.forEach(r => { map[r.doc_key] = r; });
@@ -46,7 +50,57 @@ function buildChecklist(appId) {
     status: map[d.key]?.status || 'Required',   // Required | Received | Missing
     note: map[d.key]?.note || '',
     updatedAt: map[d.key]?.updated_at || null,
+    fileName: map[d.key]?.file_name || '',
+    fileType: map[d.key]?.file_type || '',
+    fileData: map[d.key]?.file_data || '',
+    uploadMethod: map[d.key]?.upload_method || '',
   }));
+}
+
+function seedChecklistForApplication(appId) {
+  const existing = db.prepare('SELECT doc_key FROM document_status WHERE app_id = ?').all(appId);
+  const existingKeys = new Set(existing.map(row => row.doc_key));
+  const insertStmt = db.prepare(`
+    INSERT INTO document_status (app_id, doc_key, status, note, updated_at, file_name, file_type, file_data, upload_method)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  REQUIRED_DOCS.forEach(doc => {
+    if (!existingKeys.has(doc.key)) {
+      insertStmt.run(appId, doc.key, 'Required', '', new Date().toISOString(), '', '', '', '');
+    }
+  });
+
+  return buildChecklist(appId);
+}
+
+function saveDocumentUpload(appId, docKey, payload) {
+  if (!REQUIRED_DOCS.some(d => d.key === docKey)) {
+    throw new Error('Unknown document type');
+  }
+
+  const existing = db.prepare('SELECT * FROM document_status WHERE app_id = ? AND doc_key = ?').get([appId, docKey]);
+  const status = payload.status || (payload.fileData ? 'Received' : 'Required');
+  const note = payload.note || (existing?.note || '');
+  const fileName = payload.fileName || existing?.file_name || '';
+  const fileType = payload.fileType || existing?.file_type || '';
+  const fileData = payload.fileData || existing?.file_data || '';
+  const uploadMethod = payload.uploadMethod || existing?.upload_method || '';
+
+  if (existing) {
+    db.prepare(`
+      UPDATE document_status
+      SET status = ?, note = ?, updated_at = ?, file_name = ?, file_type = ?, file_data = ?, upload_method = ?
+      WHERE app_id = ? AND doc_key = ?
+    `).run(status, note, new Date().toISOString(), fileName, fileType, fileData, uploadMethod, appId, docKey);
+  } else {
+    db.prepare(`
+      INSERT INTO document_status (app_id, doc_key, status, note, updated_at, file_name, file_type, file_data, upload_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(appId, docKey, status, note, new Date().toISOString(), fileName, fileType, fileData, uploadMethod);
+  }
+
+  return buildChecklist(appId);
 }
 
 // ── GET checklist ─────────────────────────────────────────────────────────
@@ -73,16 +127,51 @@ router.put('/:appId/:docKey', (req, res) => {
   }
   const note = req.body.note || '';
 
-  db.prepare(`
-    INSERT INTO document_status (app_id, doc_key, status, note, updated_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(app_id, doc_key) DO UPDATE SET
-      status = excluded.status,
-      note = excluded.note,
-      updated_at = excluded.updated_at
-  `).run(appId, docKey, status, note);
+  const existing = db.prepare('SELECT * FROM document_status WHERE app_id = ? AND doc_key = ?').get([appId, docKey]);
+  const fileName = existing?.file_name || '';
+  const fileType = existing?.file_type || '';
+  const fileData = existing?.file_data || '';
+  const uploadMethod = existing?.upload_method || '';
+
+  if (existing) {
+    db.prepare(`
+      UPDATE document_status
+      SET status = ?, note = ?, updated_at = ?, file_name = ?, file_type = ?, file_data = ?, upload_method = ?
+      WHERE app_id = ? AND doc_key = ?
+    `).run(status, note, new Date().toISOString(), fileName, fileType, fileData, uploadMethod, appId, docKey);
+  } else {
+    db.prepare(`
+      INSERT INTO document_status (app_id, doc_key, status, note, updated_at, file_name, file_type, file_data, upload_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(appId, docKey, status, note, new Date().toISOString(), fileName, fileType, fileData, uploadMethod);
+  }
 
   res.json({ ok: true, checklist: buildChecklist(appId) });
 });
 
+router.post('/:appId/:docKey/upload', (req, res) => {
+  const { appId, docKey } = req.params;
+  if (req.user.type === 'applicant' && req.user.appId !== parseInt(appId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  if (!REQUIRED_DOCS.some(d => d.key === docKey)) {
+    return res.status(400).json({ error: 'Unknown document type' });
+  }
+
+  const payload = req.body || {};
+  if (!payload.fileData || !payload.fileName) {
+    return res.status(400).json({ error: 'Image data and file name are required' });
+  }
+
+  try {
+    const checklist = saveDocumentUpload(appId, docKey, payload);
+    res.json({ ok: true, checklist });
+  } catch (error) {
+    res.status(400).json({ error: error.message || 'Unable to save document upload' });
+  }
+});
+
+router.seedChecklistForApplication = seedChecklistForApplication;
+router.__test = { saveDocumentUpload, seedChecklistForApplication };
 module.exports = router;

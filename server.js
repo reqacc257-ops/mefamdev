@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({ origin: '*', credentials: true }));
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 // Prevent browsers and phones from serving stale login/dashboard pages
 app.use((req, res, next) => {

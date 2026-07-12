@@ -176,6 +176,15 @@
         .req-item:last-child { border-bottom: none; }
         .req-icon { font-size: 1.1rem; flex-shrink: 0; }
         .req-status { margin-left: auto; }
+        .doc-upload-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+        .doc-upload-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 10px; border-radius: 999px; border: 1px solid var(--gold);
+            background: var(--gold-light); color: var(--navy); font-size: .75rem; font-weight: 700; cursor: pointer;
+        }
+        .doc-upload-input { display: none; }
+        .doc-upload-status { font-size: .75rem; color: var(--muted); }
+        .doc-preview-link { font-size: .75rem; color: var(--teal); font-weight: 600; text-decoration: none; }
 
         /* ── Announcements ── */
         .ann-item { padding: 14px 0; border-bottom: 1px solid #f0f2f6; }
@@ -540,6 +549,52 @@ function renderPortal(app, session) {
     renderRequirements(appData.id);
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+async function uploadDocumentFromInput(input) {
+    const appId = input.dataset.appId;
+    const docKey = input.dataset.docKey;
+    const file = input.files && input.files[0];
+    if (!appId || !docKey || !file) return;
+
+    const row = input.closest('.doc-upload-row');
+    const statusEl = row?.querySelector('.doc-upload-status');
+    if (statusEl) statusEl.textContent = 'Uploading…';
+
+    const reader = new FileReader();
+    reader.onload = async function () {
+        try {
+            const result = await MefamAPI.uploadDocument(appId, docKey, {
+                status: 'Received',
+                note: 'Uploaded from applicant portal',
+                fileName: file.name,
+                fileType: file.type || 'image/*',
+                fileData: reader.result,
+                uploadMethod: input.getAttribute('capture') ? 'camera' : 'upload'
+            });
+            if (!result?.ok) {
+                if (statusEl) statusEl.textContent = result?.error || 'Upload failed';
+                return;
+            }
+            await renderRequirements(appId);
+        } catch (error) {
+            console.error('Document upload failed', error);
+            if (statusEl) statusEl.textContent = 'Upload failed';
+        }
+    };
+    reader.onerror = function () {
+        if (statusEl) statusEl.textContent = 'Upload failed';
+    };
+    reader.readAsDataURL(file);
+}
+
 async function renderRequirements(appId) {
     const el = document.getElementById('requirementsBody');
     if (!el) return;
@@ -568,9 +623,15 @@ async function renderRequirements(appId) {
         ...items.map(d => {
             const c = cfg[d.status] || cfg['Required'];
             const noteHTML = d.status === 'Missing' && d.note
-                ? `<div style="font-size:.78rem; color:#c0392b; margin:2px 0 8px 26px;">↳ ${d.note}</div>`
+                ? `<div style="font-size:.78rem; color:#c0392b; margin:2px 0 8px 26px;">↳ ${escapeHtml(d.note)}</div>`
                 : '';
-            return `<div class="req-item"><span class="req-icon">${c.icon}</span> ${d.label} <span class="req-status"><span class="sbadge ${c.cls}">${c.label}</span></span></div>${noteHTML}`;
+            const uploadLabel = d.fileName
+                ? `<div class="doc-upload-status">Last upload: ${escapeHtml(d.fileName)}${d.uploadMethod === 'camera' ? ' • Photo' : ''}</div>`
+                : `<div class="doc-upload-status">Upload a photo or image file</div>`;
+            const previewLink = d.fileData
+                ? `<a class="doc-preview-link" href="${d.fileData}" target="_blank" rel="noopener">View image</a>`
+                : '';
+            return `<div class="req-item"><span class="req-icon">${c.icon}</span> ${escapeHtml(d.label)} <span class="req-status"><span class="sbadge ${c.cls}">${c.label}</span></span></div>${noteHTML}<div class="doc-upload-row"><label class="doc-upload-btn"><input type="file" class="doc-upload-input" accept="image/*" capture="environment" data-app-id="${appId}" data-doc-key="${d.key}" onchange="uploadDocumentFromInput(this)">📷 Upload / Take Photo</label>${previewLink}${uploadLabel}</div>`;
         }),
     ];
 
