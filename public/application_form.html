@@ -210,6 +210,8 @@
             background: #fff;
             margin-bottom: 0;
         }
+        .capitalize-name { text-transform: capitalize; }
+        .capitalize-name::placeholder { text-transform: none; }
         input:focus:not([readonly]), select:focus, textarea:focus {
             border-color: var(--gold);
             outline: none;
@@ -401,9 +403,19 @@
         <div class="form-page active" id="page-0">
             <div class="section-heading"><span class="icon">👤</span><span class="translatable" data-tl="I. Personal na Impormasyon" data-en="I. Personal Information">I. Personal na Impormasyon</span></div>
 
-            <div class="field-group">
-                <label class="field-label translatable" data-tl="Buong Pangalan" data-en="Full Name">Buong Pangalan</label>
-                <input type="text" id="fullName" required class="translatable-ph" data-tl-ph="Apelyido, Pangalan, G.I." data-en-ph="Last Name, First Name, M.I." placeholder="Apelyido, Pangalan, G.I.">
+            <div class="grid-3">
+                <div class="field-group">
+                    <label class="field-label translatable" data-tl="Apelyido" data-en="Last Name">Apelyido</label>
+                    <input type="text" id="lastName" required class="translatable-ph capitalize-name" data-tl-ph="Apelyido" data-en-ph="Last Name" placeholder="Apelyido" oninput="capitalizeNameField(this)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label translatable" data-tl="Pangalan" data-en="First Name">Pangalan</label>
+                    <input type="text" id="firstName" required class="translatable-ph capitalize-name" data-tl-ph="Pangalan" data-en-ph="First Name" placeholder="Pangalan" oninput="capitalizeNameField(this)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label translatable" data-tl="Gitnang Pangalan" data-en="Middle Name">Gitnang Pangalan</label>
+                    <input type="text" id="middleName" class="translatable-ph capitalize-name" data-tl-ph="Gitnang Pangalan" data-en-ph="Middle Name" placeholder="Gitnang Pangalan" oninput="capitalizeNameField(this)">
+                </div>
             </div>
 
             <div class="field-group">
@@ -820,10 +832,13 @@
     };
 
     function fillDemoData() {
-        const names = ['Andrea Ubaldo', 'Angeline Toribio', 'Jaycee Marco', 'Jerico Jimenez', 'Reyjen Bong'];
+        const names = ['Andrea Ubaldo', 'Angeline Toribio', 'Jaycee Marco', 'Jerico Bong', 'Reyjen Cruz'];
         const selectedName = names[Math.floor(Math.random() * names.length)];
+        const parts = selectedName.split(' ').filter(Boolean);
 
-        document.getElementById('fullName').value = selectedName;
+        document.getElementById('firstName').value = parts[0] || '';
+        document.getElementById('middleName').value = parts.length > 2 ? parts.slice(1, -1).join(' ') : '';
+        document.getElementById('lastName').value = parts.length > 1 ? parts[parts.length - 1] : '';
         document.getElementById('address').value = '123 Sample Street, Purok 4';
         document.getElementById('barangay').value = 'Banaban';
         document.getElementById('dob').value = '2007-05-14';
@@ -963,6 +978,21 @@
         return age >= 0 ? age : 0;
     }
 
+    function normalizeNameValue(value) {
+        return value
+            .replace(/\s+/g, ' ')
+            .trim()
+            .split(' ')
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+
+    function capitalizeNameField(el) {
+        if (!el) return;
+        el.value = normalizeNameValue(el.value);
+    }
+
     /* ── Family table ── */
     function initFamilyRows() { for (let i = 0; i < 3; i++) addFamilyRow(); }
 
@@ -1069,8 +1099,13 @@
 
     /* ── Review summary ── */
     function renderReviewSummary() {
+        const fullName = [
+            document.getElementById('firstName').value,
+            document.getElementById('middleName').value,
+            document.getElementById('lastName').value
+        ].filter(Boolean).join(' ');
         const fields = [
-            ['Pangalan / Name', document.getElementById('fullName').value],
+            ['Pangalan / Name', fullName],
             ['Barangay', document.getElementById('barangay').value],
             ['Kaarawan / Birthday', document.getElementById('dob').value],
             ['Kasarian / Sex', document.getElementById('gender').value],
@@ -1184,7 +1219,14 @@
         const data = {
             id: Date.now(),
             sy: document.getElementById('sySelect').value,
-            name: document.getElementById('fullName').value.trim(),
+            firstName: document.getElementById('firstName').value.trim(),
+            middleName: document.getElementById('middleName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            name: [
+                document.getElementById('firstName').value.trim(),
+                document.getElementById('middleName').value.trim(),
+                document.getElementById('lastName').value.trim()
+            ].filter(Boolean).join(' '),
             address: document.getElementById('address').value,
             barangay: document.getElementById('barangay').value,
             dob: document.getElementById('dob').value,
