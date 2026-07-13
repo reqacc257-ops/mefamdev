@@ -309,10 +309,11 @@
             <div class="input-wrap">
                 <span class="input-icon" id="usernameIcon">👤</span>
                 <input type="text" id="unifiedUsername"
-                    placeholder="e.g. director  or  APP-1001"
+                    placeholder="e.g. Director or APP-1001"
                     autocomplete="username"
-                    oninput="onUsernameInput(this.value)"
-                    onkeydown="if(event.key==='Enter') proceedLogin()">
+                    oninput="onUsernameInput(this)"
+                    onkeydown="if(event.key==='Enter') proceedLogin()"
+                    style="text-transform: capitalize;">
             </div>
             <p id="usernameHint" style="font-size:.74rem; color:#aaa; margin-top:5px;"></p>
         </div>
@@ -338,7 +339,7 @@
         <!-- Step 2b: Applicant verification (shown for applicant portal access) -->
         <div id="applicantNameField" style="display:none;">
             <div class="form-group">
-                <label>Full Name</label>
+                <label>User Name</label>
                 <div class="input-wrap">
                     <input type="text" id="unifiedName"
                         placeholder="As submitted in your application"
@@ -411,8 +412,24 @@ const STAFF_USERNAMES = STAFF_ACCOUNTS.map(a => a.username);
 ══════════════════════════════════════ */
 let detectedType = null; // 'staff' | 'applicant' | null
 
-function onUsernameInput(val) {
-    const v = val.trim().toLowerCase();
+function onUsernameInput(input) {
+    if (!input) return;
+    const rawValue = String(input.value || '');
+    let displayValue = rawValue;
+
+    if (/^app-/i.test(rawValue.trim())) {
+        displayValue = rawValue.trim().replace(/^app-/i, 'APP-');
+    } else if (/^\d+$/.test(rawValue.trim())) {
+        displayValue = rawValue.trim();
+    } else {
+        displayValue = rawValue.replace(/\b([a-z])/g, char => char.toUpperCase());
+    }
+
+    if (displayValue !== rawValue) {
+        input.value = displayValue;
+    }
+
+    const v = input.value.trim().toLowerCase();
     hideError();
 
     // Reset
@@ -429,7 +446,7 @@ function onUsernameInput(val) {
     if (!v) return;
 
     // ── Detect applicant: starts with "app-" or is purely numeric
-    const isAppRef = /^app-/i.test(val.trim()) || /^\d+$/.test(v);
+    const isAppRef = /^app-/i.test(rawValue.trim()) || /^\d+$/.test(v);
 
     // ── Detect staff: exact username match
     const isStaff = STAFF_USERNAMES.includes(v);
@@ -525,7 +542,7 @@ function proceedLogin() {
             document.getElementById('unifiedPassword').focus();
             showError('Please enter your password to continue.');
         } else {
-            showError('Username not recognised. Enter a staff username (e.g. "director") or an APP reference (e.g. "APP-1001").');
+            showError('Wrong username or password.');
         }
     }
 }
@@ -546,7 +563,7 @@ async function doStaffLogin(username) {
                 window.location.assign('/admin_dashboard.html');
             });
         } else {
-            showError(res?.error || 'Wrong password. Please try again.');
+            showError(res?.error || 'Wrong username or password.');
             document.getElementById('unifiedPassword').value = '';
             document.getElementById('unifiedPassword').focus();
         }
@@ -569,7 +586,7 @@ async function doApplicantLogin(ref) {
                 window.location.assign('/applicant_portal.html');
             });
         } else {
-            showError(res?.error || 'No application found with that reference number. Double-check and try again.');
+            showError(res?.error || 'Wrong username or password.');
         }
     } catch (error) {
         console.error('Applicant login failed:', error);
