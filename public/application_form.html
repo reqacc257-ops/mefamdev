@@ -982,10 +982,8 @@
         return value
             .replace(/\s+/g, ' ')
             .trim()
-            .split(' ')
-            .filter(Boolean)
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
+            .replace(/\b([a-zA-Z])/g, (match, letter) => letter.toUpperCase())
+            .replace(/\B([A-Z])/g, (match, letter) => letter.toLowerCase());
     }
 
     function capitalizeNameField(el) {
