@@ -454,6 +454,8 @@ function onUsernameInput(input) {
         const acc = STAFF_ACCOUNTS.find(a => a.username === v);
         showDetected('🏛 Staff — ' + acc.title, '#e3f0ff', '#1a3a6e', '#90b8f8');
         document.getElementById('staffPasswordField').style.display = 'block';
+        document.getElementById('applicantNameField').style.display = 'none';
+        document.getElementById('applicantPasswordField').style.display = 'none';
         document.getElementById('loginBtn').textContent  = 'Sign In to Admin Dashboard →';
         document.getElementById('loginBtn').style.background = 'var(--navy)';
         document.getElementById('hintStaff').style.display = 'block';
