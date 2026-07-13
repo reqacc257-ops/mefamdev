@@ -1777,7 +1777,8 @@ function viewProfile(id) {
     document.getElementById('pd-contact').innerText = s.contact || 'N/A';
     document.getElementById('pd-sy').innerText = s.sy || '—';
     document.getElementById('pd-gender').innerText = s.gender || '—';
-    document.getElementById('pd-income').innerText = s.totalIncome ? '₱' + Number(s.totalIncome).toLocaleString() : '—';
+    const profileIncome = parseCurrencyValue(s.totalIncome);
+    document.getElementById('pd-income').innerText = profileIncome === null ? '—' : formatCurrency(profileIncome);
 
     // Formation attendance
     const events = JSON.parse(localStorage.getItem('mefamdev_events') || '[]');
