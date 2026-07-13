@@ -826,9 +826,10 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                     <div class="card-title" style="margin:0;">Grade Monitoring</div>
-                    <div style="display:flex; gap:10px; align-items:center;">
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <label style="font-size:.84rem; color:var(--text-muted); margin:0;">Semester:</label>
-                        <select id="gradeSemSelect" style="width:auto;"><option>2025-2026 1st Sem</option><option>2025-2026 2nd Sem</option></select>
+                        <select id="gradeSemSelect" style="width:auto;"></select>
+                        <button class="btn btn-sm btn-ghost" type="button" onclick="addGradeSemester()" style="padding:8px 10px;">+ Add Semester</button>
                     </div>
                 </div>
                 <div class="table-wrap">
@@ -1280,6 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyRBAC();
     initCharts();
+    ensureGradeSemesterOptions();
     currentGradeSemester = document.getElementById('gradeSemSelect')?.value || '';
     document.getElementById('gradeSemSelect')?.addEventListener('change', () => {
         currentGradeSemester = document.getElementById('gradeSemSelect')?.value || '';
@@ -1304,6 +1306,54 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ══════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════ */
+function ensureGradeSemesterOptions() {
+    const select = document.getElementById('gradeSemSelect');
+    if (!select) return;
+    const saved = JSON.parse(localStorage.getItem('mefamdev_grade_semesters') || '[]');
+    const defaultOptions = ['2025-2026 1st Sem', '2025-2026 2nd Sem'];
+    const options = Array.isArray(saved) && saved.length > 0 ? saved : defaultOptions;
+    select.innerHTML = options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+    if (!options.includes(currentGradeSemester) && currentGradeSemester) {
+        const option = document.createElement('option');
+        option.value = currentGradeSemester;
+        option.textContent = currentGradeSemester;
+        select.appendChild(option);
+        select.value = currentGradeSemester;
+    }
+    if (!currentGradeSemester) {
+        currentGradeSemester = select.value;
+    }
+}
+
+function addGradeSemester() {
+    const label = prompt('Add a semester label, e.g. 2026-2027 1st Sem');
+    if (!label) return;
+    const normalized = String(label).trim();
+    if (!normalized) return;
+    const select = document.getElementById('gradeSemSelect');
+    if (!select) return;
+    const existing = Array.from(select.options).some(opt => opt.value === normalized);
+    if (existing) {
+        select.value = normalized;
+        currentGradeSemester = normalized;
+        const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
+        renderGrades(apps.filter(a => a.status === 'Accepted'));
+        return;
+    }
+    const option = document.createElement('option');
+    option.value = normalized;
+    option.textContent = normalized;
+    select.appendChild(option);
+    select.value = normalized;
+    currentGradeSemester = normalized;
+    const saved = JSON.parse(localStorage.getItem('mefamdev_grade_semesters') || '[]');
+    const next = Array.isArray(saved) ? saved.slice() : [];
+    if (!next.includes(normalized)) next.push(normalized);
+    localStorage.setItem('mefamdev_grade_semesters', JSON.stringify(next));
+    const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
+    renderGrades(apps.filter(a => a.status === 'Accepted'));
+}
+
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
