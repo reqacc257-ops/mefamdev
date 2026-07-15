@@ -1325,8 +1325,8 @@ function ensureGradeSemesterOptions() {
     }
 }
 
-function addGradeSemester() {
-    const label = prompt('Add a semester label, e.g. 2026-2027 1st Sem');
+function addGradeQuarter() {
+    const label = prompt('Add a quarter label, e.g. 2026-2027 1st Quarter');
     if (!label) return;
     const normalized = String(label).trim();
     if (!normalized) return;
