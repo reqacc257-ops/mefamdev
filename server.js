@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const { Resend } = require('resend');
 
 const db = require('./db');
 const authRouter = require('./routes/auth');
@@ -48,6 +49,29 @@ app.post('/api/public/apply', submitPublicApplication);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+
+app.get('/test-email', async (req, res) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const recipient = req.query.to || process.env.TEST_EMAIL_RECIPIENT || 'reqacc257@gmail.com';
+
+  if (!apiKey) {
+    return res.status(500).json({ ok: false, error: 'RESEND_API_KEY is not set' });
+  }
+
+  try {
+    const resend = new Resend(apiKey);
+    const result = await resend.emails.send({
+      from: process.env.RESEND_FROM || 'onboarding@resend.dev',
+      to: recipient,
+      subject: 'MEFAMDEV Resend test',
+      html: '<p>This is a test email from MEFAMDEV on Render.</p>'
+    });
+
+    res.json({ ok: true, result });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {
