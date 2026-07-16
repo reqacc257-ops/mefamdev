@@ -23,6 +23,12 @@ function buildResetUrl(token, baseUrlOverride) {
   return `${baseUrl.replace(/\/$/, '')}/reset_password.html?token=${encodeURIComponent(token)}`;
 }
 
+function getApplicantGreeting(app) {
+  const displayName = app?.name || 'Applicant';
+  const username = app?.portal_username || app?.username || '';
+  return username ? `Hello ${displayName} (${username}),` : `Hello ${displayName},`;
+}
+
 async function sendPasswordResetEmail(app, token, req) {
   const baseUrl = process.env.APP_BASE_URL || (req && req.protocol && req.get('host') ? `${req.protocol}://${req.get('host')}` : 'http://localhost:3000');
   const resetUrl = buildResetUrl(token, baseUrl);
@@ -35,7 +41,7 @@ async function sendPasswordResetEmail(app, token, req) {
         to: app.email,
         subject: 'MEFAMDEV password reset request',
         html: `
-          <p>Hello ${app.name || 'applicant'},</p>
+          <p>${getApplicantGreeting(app)}</p>
           <p>We received a request to reset your applicant portal password.</p>
           <p>Use the button below to choose a new password and continue accessing your MEFAMDEV account.</p>
           <p><a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#1a2e44;color:#ffffff;text-decoration:none;border-radius:8px;">Reset my password</a></p>
@@ -72,7 +78,7 @@ async function sendPasswordResetEmail(app, token, req) {
     to: app.email,
     subject: 'MEFAMDEV password reset request',
     html: `
-      <p>Hello ${app.name || 'applicant'},</p>
+      <p>${getApplicantGreeting(app)}</p>
       <p>We received a request to reset your applicant portal password.</p>
       <p>Use the button below to choose a new password and continue accessing your MEFAMDEV account.</p>
       <p><a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#1a2e44;color:#ffffff;text-decoration:none;border-radius:8px;">Reset my password</a></p>
