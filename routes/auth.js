@@ -142,8 +142,8 @@ router.post('/lookup', (req, res) => {
   });
 });
 
-router.post('/applicant/forgot-password', async (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase();
+async function handleForgotPassword(req, res) {
+  const email = String(req.body?.email || req.query?.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ error: 'Email required' });
 
   const apps = db.prepare('SELECT * FROM applications').all();
@@ -157,8 +157,11 @@ router.post('/applicant/forgot-password', async (req, res) => {
   if (!sent) return res.status(502).json({ error: 'Unable to send reset email right now.' });
 
   console.log(`[password-reset] ${email} -> APP-${app.id} token=${resetToken}`);
-  res.json({ ok: true, message: 'Check your email for a reset link.' });
-});
+  return res.json({ ok: true, message: 'Check your email for a reset link.' });
+}
+
+router.post('/applicant/forgot-password', handleForgotPassword);
+router.get('/applicant/forgot-password', handleForgotPassword);
 
 router.post('/applicant/reset-password', (req, res) => {
   const token = String(req.body?.token || '').trim();

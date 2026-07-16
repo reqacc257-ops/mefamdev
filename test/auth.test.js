@@ -65,3 +65,30 @@ test('auth lookup resolves an applicant by portal username', async () => {
     server.close();
   }
 });
+
+test('forgot-password creates a reset token for any applicant email', async () => {
+  db.data.applications = [];
+  db.prepare(
+    'INSERT INTO applications (name, email, status) VALUES (?, ?, ?)' 
+  ).run('Reset Test Applicant', 'applicant@example.com', 'Pending Review');
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', authRouter);
+
+  const server = app.listen(0);
+  await new Promise(resolve => server.once('listening', resolve));
+
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/auth/applicant/forgot-password?email=applicant@example.com`);
+    const body = await res.json();
+    const savedApp = db.prepare('SELECT * FROM applications WHERE id = ?').get(1);
+
+    assert.equal(res.status, 200);
+    assert.equal(body.ok, true);
+    assert.match(savedApp.reset_token || '', /[a-f0-9]+/);
+  } finally {
+    server.close();
+  }
+});
