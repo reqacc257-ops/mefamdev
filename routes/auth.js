@@ -8,6 +8,7 @@ const router = require('express').Router();
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const db = require('../db');
 
 const JWT_SECRET  = process.env.JWT_SECRET  || 'mefamdev-secret-change-in-production';
@@ -23,9 +24,33 @@ function buildResetUrl(token) {
 }
 
 async function sendPasswordResetEmail(app, token) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      const resend = new Resend(resendApiKey);
+      const result = await resend.emails.send({
+        from: process.env.RESEND_FROM || 'onboarding@resend.dev',
+        to: app.email,
+        subject: 'MEFAMDEV password reset request',
+        html: `
+          <p>Hello ${app.name || 'applicant'},</p>
+          <p>We received a request to reset your applicant portal password.</p>
+          <p><a href="${buildResetUrl(token)}">Reset your password</a></p>
+          <p>If you did not make this request, you can ignore this email.</p>
+        `,
+      });
+      if (result?.error) {
+        throw new Error(result.error.message || 'Resend returned an error');
+      }
+      return true;
+    } catch (error) {
+      console.error('[password-reset] Resend delivery failed:', error.message);
+    }
+  }
+
   const smtpHost = process.env.SMTP_HOST;
   if (!smtpHost) {
-    console.log(`[password-reset] SMTP not configured. Reset link: ${buildResetUrl(token)}`);
+    console.log(`[password-reset] No mail provider configured. Reset link: ${buildResetUrl(token)}`);
     return true;
   }
 
