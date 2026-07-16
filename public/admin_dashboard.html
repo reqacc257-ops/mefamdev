@@ -1982,7 +1982,8 @@ function viewApp(id) {
     };
     const submittedEntries = Object.entries(a.submittedData || {}).filter(([key, value]) => {
         if (!value || (Array.isArray(value) && value.length === 0)) return false;
-        return !['captchaInput', 'submitBtn', 'scholarForm'].includes(key);
+        const hiddenKeys = ['captchaInput', 'submitBtn', 'scholarForm', 'appUsername', 'appPassword', 'username', 'password'];
+        return !hiddenKeys.includes(key);
     });
     const submittedHTML = submittedEntries.length > 0
         ? `<div class="modal-section" style="margin-top:16px;">Submitted Form Details</div>
