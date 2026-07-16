@@ -179,6 +179,15 @@
         .btn-login:hover { background: var(--navy2); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(26,46,68,.3); }
         .btn-login:active { transform: none; }
 
+        .btn-link {
+            margin-top: 10px; background: #f7f9fd; border: 1px solid #dfe6f0;
+            color: #1a3a6e; font-weight: 700; cursor: pointer; padding: 9px 12px;
+            text-align: center; width: 100%; border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            text-decoration: underline; text-underline-offset: 2px;
+        }
+        .btn-link:hover { background: #eef4ff; color: #10315b; }
+
         /* Divider */
         .divider {
             display: flex; align-items: center; gap: 12px;
@@ -330,8 +339,8 @@
                         onkeydown="if(event.key==='Enter') proceedLogin()">
                     <button type="button" onclick="toggleUnifiedPassword()" id="toggleUnifiedPw" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; cursor:pointer;">Show</button>
                 </div>
-                <p style="font-size:.74rem; color:#bbb; margin-top:5px; text-align:right; cursor:pointer;">
-                    Forgot password? Contact director.
+                <p style="font-size:.74rem; color:#bbb; margin-top:5px; text-align:right;">
+                    Need help signing in? Use the Forgot Password link below.
                 </p>
             </div>
         </div>
@@ -360,6 +369,9 @@
 
         <button class="btn-login" id="loginBtn" onclick="proceedLogin()">
             Continue →
+        </button>
+        <button type="button" class="btn-link" id="forgotPasswordBtn" onclick="openForgotPasswordModal()">
+            🔑 Forgot Password?
         </button>
     </div>
 
@@ -391,6 +403,19 @@
     </div>
 
     <p class="footer-note">© 2026 MEFAMDEV-Life · Angat, Bulacan · Data Privacy Act RA 10173</p>
+</div>
+
+<div id="forgotPasswordModal" style="display:none; position:fixed; inset:0; background:rgba(10,20,40,.65); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="width:min(420px, 100%); background:#fff; border-radius:16px; padding:24px; box-shadow:0 18px 50px rgba(0,0,0,.2);">
+        <h3 style="margin:0 0 8px; color:var(--navy);">Reset your applicant password</h3>
+        <p style="margin:0 0 14px; color:#5f6b7a; font-size:.92rem;">Enter the email address used on your application.</p>
+        <input type="email" id="forgotEmailInput" placeholder="you@example.com" style="width:100%; padding:10px 12px; border:1px solid #d7dde6; border-radius:8px; margin-bottom:10px;">
+        <p id="forgotPasswordStatus" style="display:none; margin:10px 0 0; font-size:.9rem; color:#1b5e20; font-weight:700;"></p>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+            <button type="button" class="btn btn-secondary" onclick="closeForgotPasswordModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitForgotPassword()">Send Reset Link</button>
+        </div>
+    </div>
 </div>
 
 <script src="/mefamdev-api.js"></script>
@@ -625,6 +650,50 @@ function toggleUnifiedAppPassword() {
     if (!el) return;
     if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
     else { el.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function openForgotPasswordModal() {
+    const modal = document.getElementById('forgotPasswordModal');
+    const input = document.getElementById('forgotEmailInput');
+    const status = document.getElementById('forgotPasswordStatus');
+    if (!modal || !input || !status) return;
+    input.value = '';
+    status.textContent = '';
+    status.style.display = 'none';
+    modal.style.display = 'flex';
+    input.focus();
+}
+
+function closeForgotPasswordModal() {
+    const modal = document.getElementById('forgotPasswordModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function submitForgotPassword() {
+    const input = document.getElementById('forgotEmailInput');
+    const status = document.getElementById('forgotPasswordStatus');
+    if (!input || !status) return;
+    const email = input.value.trim();
+    if (!email) {
+        status.textContent = 'Please enter an email address.';
+        status.style.display = 'block';
+        status.style.color = '#b3261e';
+        return;
+    }
+    try {
+        const res = await MefamAPI.requestApplicantPasswordReset(email);
+        status.textContent = res?.message || 'Check your email for a reset link.';
+        status.style.display = 'block';
+        status.style.color = '#1b5e20';
+        if (res?.ok) {
+            setTimeout(() => closeForgotPasswordModal(), 1200);
+        }
+    } catch (error) {
+        console.error('Forgot password failed:', error);
+        status.textContent = 'Unable to send a reset link right now.';
+        status.style.display = 'block';
+        status.style.color = '#b3261e';
+    }
 }
 
 /* ── Auto-redirect if already logged in ── */
