@@ -7,6 +7,7 @@
 const router = require('express').Router();
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const db = require('../db');
 
 const JWT_SECRET  = process.env.JWT_SECRET  || 'mefamdev-secret-change-in-production';
@@ -14,6 +15,49 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '8h';
 
 function hashPassword(pw) {
   return crypto.createHash('sha256').update(pw).digest('hex');
+}
+
+function buildResetUrl(token) {
+  const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+  return `${baseUrl.replace(/\/$/, '')}/reset_password.html?token=${encodeURIComponent(token)}`;
+}
+
+async function sendPasswordResetEmail(app, token) {
+  const smtpHost = process.env.SMTP_HOST;
+  if (!smtpHost) {
+    console.log(`[password-reset] SMTP not configured. Reset link: ${buildResetUrl(token)}`);
+    return true;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || 'mefamdev@example.com',
+    to: app.email,
+    subject: 'MEFAMDEV password reset request',
+    html: `
+      <p>Hello ${app.name || 'applicant'},</p>
+      <p>We received a request to reset your applicant portal password.</p>
+      <p><a href="${buildResetUrl(token)}">Reset your password</a></p>
+      <p>If you did not make this request, you can ignore this email.</p>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('[password-reset] Email delivery failed:', error.message);
+    return false;
+  }
 }
 
 // ── Staff login ───────────────────────────────────────────────────────────────
@@ -67,6 +111,38 @@ router.post('/lookup', (req, res) => {
       status: app.status,
     }
   });
+});
+
+router.post('/applicant/forgot-password', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Email required' });
+
+  const apps = db.prepare('SELECT * FROM applications').all();
+  const app = apps.find(row => String(row.email || '').trim().toLowerCase() === email);
+  if (!app) return res.status(404).json({ error: 'No application found for that email.' });
+
+  const resetToken = crypto.randomBytes(16).toString('hex');
+  db.prepare('UPDATE applications SET reset_token = ? WHERE id = ?').run(resetToken, app.id);
+
+  const sent = await sendPasswordResetEmail(app, resetToken);
+  if (!sent) return res.status(502).json({ error: 'Unable to send reset email right now.' });
+
+  console.log(`[password-reset] ${email} -> APP-${app.id} token=${resetToken}`);
+  res.json({ ok: true, message: 'Check your email for a reset link.' });
+});
+
+router.post('/applicant/reset-password', (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  const password = String(req.body?.password || '').trim();
+  if (!token) return res.status(400).json({ error: 'Reset token required' });
+  if (!password) return res.status(400).json({ error: 'New password required' });
+
+  const app = db.prepare('SELECT * FROM applications WHERE reset_token = ?').get(token);
+  if (!app) return res.status(404).json({ error: 'Invalid or expired reset link.' });
+
+  const hashed = crypto.createHash('sha256').update(password).digest('hex');
+  db.prepare('UPDATE applications SET password_hash = ?, reset_token = NULL WHERE id = ?').run(hashed, app.id);
+  res.json({ ok: true, message: 'Your password has been reset successfully.' });
 });
 
 // ── Applicant portal login ────────────────────────────────────────────────────

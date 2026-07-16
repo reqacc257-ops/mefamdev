@@ -460,10 +460,14 @@
                 </div>
             </div>
 
-            <div class="grid-2">
+            <div class="grid-3">
                 <div class="field-group">
                     <label class="field-label translatable" data-tl="Contact No." data-en="Contact No.">Contact No.</label>
                     <input type="text" id="contact" placeholder="09xxxxxxxxx" required maxlength="11">
+                </div>
+                <div class="field-group">
+                    <label class="field-label translatable" data-tl="Email" data-en="Email">Email</label>
+                    <input type="email" id="email" placeholder="you@example.com" required>
                 </div>
                 <div class="field-group">
                     <label class="field-label translatable" data-tl="Relihiyon" data-en="Religion">Relihiyon</label>
@@ -1231,8 +1235,10 @@
         const now = new Date();
         const username = document.getElementById('appUsername')?.value?.trim() || '';
         const password = document.getElementById('appPassword')?.value?.trim() || '';
+        const email = document.getElementById('email')?.value?.trim() || '';
         if (!username) { alert('Please create a portal username.'); return; }
         if (!password) { alert('Please create a portal password.'); return; }
+        if (!email) { alert('Please enter your email address.'); return; }
 
         const data = {
             id: Date.now(),
@@ -1251,6 +1257,7 @@
             age: document.getElementById('age').value,
             gender: document.getElementById('gender').value,
             contact: document.getElementById('contact').value.trim(),
+            email: email,
             religion: document.getElementById('religion').value,
             birthplace: document.getElementById('birthplace').value,
             talents: document.getElementById('talents').value,

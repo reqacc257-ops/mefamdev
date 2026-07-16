@@ -25,6 +25,7 @@ function parseApp(row) {
   return {
     ...row,
     name: row.name || '',
+    email: row.email || '',
     status: row.status || 'Pending Review',
     school: row.school || '',
     grade: row.grade || '',
@@ -136,13 +137,13 @@ function submitPublicApplication(req, res) {
 
   const stmt = db.prepare(`
     INSERT INTO applications
-      (sy, name, address, barangay, dob, age, gender, contact, religion, birthplace,
+      (sy, name, address, barangay, dob, age, gender, contact, email, religion, birthplace,
        talents, clubs, ambition, living_with, edu_level, prev_grade, prev_school,
        school, grade, degree, why_scholar, total_income, total_expense,
        family_members, properties, can_provide, status, date_label, password_hash, portal_username,
        submitted_at, submitted_data, status_updated_at, status_history)
     VALUES
-      (@sy, @name, @address, @barangay, @dob, @age, @gender, @contact, @religion, @birthplace,
+      (@sy, @name, @address, @barangay, @dob, @age, @gender, @contact, @email, @religion, @birthplace,
        @talents, @clubs, @ambition, @living_with, @edu_level, @prev_grade, @prev_school,
        @school, @grade, @degree, @why_scholar, @total_income, @total_expense,
        @family_members, @properties, @can_provide, 'Pending Review', @date_label, @password_hash, @portal_username,
@@ -158,6 +159,7 @@ function submitPublicApplication(req, res) {
     age:           b.age            || null,
     gender:        b.gender         || '',
     contact:       b.contact        || '',
+    email:         b.email          || '',
     religion:      b.religion       || '',
     birthplace:    b.birthplace     || '',
     talents:       b.talents        || '',

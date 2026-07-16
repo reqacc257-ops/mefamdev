@@ -99,6 +99,14 @@ const MefamAPI = {
     }
   },
 
+  async requestApplicantPasswordReset(email) {
+    return this._post('/auth/applicant/forgot-password', { email }, false);
+  },
+
+  async resetApplicantPassword(token, password) {
+    return this._post('/auth/applicant/reset-password', { token, password }, false);
+  },
+
   logout() {
     sessionStorage.removeItem('mefamdev_token');
     sessionStorage.removeItem('mefamdev_session');
