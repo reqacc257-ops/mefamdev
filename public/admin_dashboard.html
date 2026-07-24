@@ -1841,7 +1841,7 @@ function renderRecentApps(apps) {
     tbody.innerHTML = recent.map(a => `
         <tr>
             <td>
-                <span class="app-id-badge" onclick="openApplicantPortal(${a.id})" title="Open applicant's portal view">${a.referenceNumber || 'APP-' + a.id}</span>
+                <span class="app-id-badge" onclick="openApplicantPortal(${a.id})" title="Open applicant's portal view">${a.referenceNumber || a.reference_number || 'APP-' + a.id}</span>
             </td>
             <td><strong>${a.name}</strong></td>
             <td>${a.barangay || '—'}</td>
@@ -1849,7 +1849,7 @@ function renderRecentApps(apps) {
             <td style="color:var(--text-muted); font-size:.82rem;">${formatAppDate(a)}</td>
             <td>${statusBadge(a.status)}</td>
             <td><button class="btn btn-gold btn-sm" onclick="viewApp(${a.id})">View</button></td>
-        </tr>`).join('') || `<tr><td colspan="7" class="empty-state">No applications yet.</td></tr>`;
+        </tr>`}  }{).join('') || `<tr><td colspan="7" class="empty-state">No applications yet.</td></tr>`;
 }
 
 /* ── Full table ── */
@@ -1859,7 +1859,7 @@ function renderFullAppsTable(apps) {
     tbody.innerHTML = apps.map(a => `
         <tr data-name="${a.name.toLowerCase()}" data-brgy="${(a.barangay||'').toLowerCase()}">
             <td>
-                <span class="app-id-badge" onclick="openApplicantPortal(${a.id})" title="Open applicant's portal view">${a.referenceNumber || 'APP-' + a.id}</span>
+                <span class="app-id-badge" onclick="openApplicantPortal(${a.id})" title="Open applicant's portal view">${a.referenceNumber || a.reference_number || 'APP-' + a.id}</span>
             </td>
             <td style="color:var(--text-muted); font-size:.82rem;">${formatAppDate(a)}</td>
             <td><strong>${a.name}</strong></td>
