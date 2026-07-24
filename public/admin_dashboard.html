@@ -726,10 +726,10 @@
         ═══════════════════════════════════════════════ -->
         <div id="intake-sheet" class="page">
             <div class="card" style="background:linear-gradient(135deg, #eaf3ff, #f0f8ff); border-left:5px solid var(--navy); margin-bottom:18px;">
-                <p style="font-size:.9rem; color:#444; margin-bottom:12px;">Search pending applicants to auto-fill the Social Worker Intake Sheet from their submitted application data.</p>
+                <p style="font-size:.9rem; color:#444; margin-bottom:12px;">Search applicants to auto-fill the Social Worker Intake Sheet from submitted application data.</p>
                 <div class="search-wrap" style="max-width:420px; margin-bottom:14px;">
                     <span class="search-icon"></span>
-                    <input type="text" id="pendingApplicantSearch" class="search-input" placeholder="Search pending applicants by name, school, or barangay..." oninput="filterPendingApplicants()">
+                    <input type="text" id="pendingApplicantSearch" class="search-input" placeholder="Search applicants by name, school, or barangay..." oninput="filterPendingApplicants()">
                 </div>
                 <div id="pendingApplicantResults" class="search-results"></div>
                 <div id="pendingApplicantDetail" class="pending-detail-card" style="display:none; margin-top:16px;"></div>
@@ -2057,9 +2057,9 @@ async function saveGrade() {
 
 /* ── Pending dropdown (intake) ── */
 function populatePendingSelect(apps) {
-    const pending = apps.filter(a => a.status === 'Pending Review' || a.status === 'Interviewing');
-    window.pendingApplicantsCache = pending;
-    renderPendingApplicantSearchList(pending);
+    const filtered = apps; // Show all applicants in intake lookup
+    window.pendingApplicantsCache = filtered;
+    renderPendingApplicantSearchList(filtered);
 }
 
 function renderPendingApplicantSearchList(apps) {
@@ -2067,7 +2067,7 @@ function renderPendingApplicantSearchList(apps) {
     const detail = document.getElementById('pendingApplicantDetail');
     if (!results) return;
     results.innerHTML = apps.length === 0
-        ? '<div class="empty-state" style="padding:14px; border-radius:14px; background:#fff; color:#666;">No pending applicants found.</div>'
+        ? '<div class="empty-state" style="padding:14px; border-radius:14px; background:#fff; color:#666;">No applicants found.</div>'
         : apps.map(app => `
             <button type="button" class="pending-result-item" onclick="selectPendingApplicant(${app.id})">
                 <div class="pending-result-name">${escapeHtml(app.name)}</div>
