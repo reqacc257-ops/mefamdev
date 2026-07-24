@@ -663,7 +663,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                         <div>
                             <div class="card-title" style="margin:0;">Sample Applicant Credentials</div>
-                            <div style="font-size:.88rem; color:var(--text-muted);">Use these accounts to log in to the applicant portal without manually entering each record.</div>
+                            <div style="font-size:.88rem; color:var(--text-muted);">Click “Generate 50 Sample Applications” and use these credentials in the applicant login.</div>
                         </div>
                         <button class="btn btn-ghost btn-sm" onclick="toggleSampleCredentials()">Show / Hide</button>
                     </div>
@@ -691,7 +691,7 @@ user19 / pass19 / Name: Nina Lopez          / Email: test@gmail.com     / Ref: 2
 user20 / pass20 / Name: Carlo Santos        / Email: test@gmail.com     / Ref: 20260724200910
 user21 / pass21 / Name: Tessa Garcia        / Email: test@gmail.com     / Ref: 20260724201010
 user22 / pass22 / Name: Jomar Bautista      / Email: test@gmail.com     / Ref: 20260724201110
-user23 / pass23 / Name: Angelica Cruz       / Email: test@gmail.com     / Ref: 20260724201210
+user23 / pass23  / Name: Angelica Cruz       / Email: test@gmail.com     / Ref: 20260724201210
 user24 / pass24 / Name: Vince Dela Rosa     / Email: test@gmail.com     / Ref: 20260724201310
 user25 / pass25 / Name: Sofia Morales       / Email: test@gmail.com     / Ref: 20260724201410
 user26 / pass26 / Name: Danny Lopez         / Email: test@gmail.com     / Ref: 20260724201510
@@ -2436,75 +2436,116 @@ function openApplicantPortal(appId) {
     window.open('applicant_portal.html?preview=1', '_blank');
 }
 
+function toggleSampleCredentials() {
+    const card = document.getElementById('sampleCredentialsCard');
+    if (!card) return;
+    card.style.display = card.style.display === 'block' ? 'none' : 'block';
+}
+
 function ensureSampleApplications() {
     const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
     if (apps.length === 0) {
-        const sampleApps = generateRandomApplications(50);
+        const sampleApps = generateSampleApplications(50);
         localStorage.setItem('mefamdev_apps', JSON.stringify(sampleApps));
     }
 }
 
 function seedSampleApplications(count = 50) {
     if (!confirm(`Generate ${count} sample applications? This will replace existing application data.`)) return;
-    const sampleApps = generateRandomApplications(count);
+    const sampleApps = generateSampleApplications(count);
     localStorage.setItem('mefamdev_apps', JSON.stringify(sampleApps));
     loadAllData();
     alert(`${sampleApps.length} sample applications created.`);
 }
 
-function generateRandomApplications(count = 50) {
-    const firstNames = ['Mikaela','Juan','Angela','Rafael','Isabella','Miguel','Leah','Noah','Sophia','Diego','Arianna','Theo','Ella','Caleb','Nina','Luca','Zara','Romeo','Luna','Kai'];
-    const lastNames = ['Santos','Reyes','Cruz','Fernandez','Lopez','Garcia','Pacheco','Valdez','Mendoza','Ortega','Bautista','Manalo','Salazar','Villanueva','Dela Cruz','Torres','Nava','Diaz','Ramos'];
-    const barangays = ['Banaban','Binangbag','Poblacion','San Jose','San Roque','Bulihan','Muzon','Sta. Cruz','San Francisco','San Miguel'];
-    const schools = ['Angat Central School','Angat National High School','Bulacan State University','St. Michael\'s College','San Roque Elementary School','Holy Family Academy','Paaralang Sek. ng Angat','Don Bosco Technical Institute','East Bulacan High School','Northview Senior High'];
-    const grades = ['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'];
-    const statuses = ['Pending Review','Interviewing','Accepted'];
-    const genders = ['Male','Female'];
-    const ambitions = ['Become a teacher','Finish senior high and help family','Study nursing','Become an engineer','Start a small business','Become a community leader','Finish college','Become a doctor','Help siblings finish school','Open a tutorial center'];
-    const reasons = ['Financial need due to parent illness','Family income is below the poverty line','Supports siblings in school','Family lost source of livelihood','Needs school supplies and tuition','Wants to continue studies despite hardship','Parent is a farmer with irregular income','Single parent household needs support','Household income is unstable','Requires help to stay in school'];
-    const schoolYears = ['2025-2026','2026-2027'];
-    const streetNames = ['Narra St.','Mabini St.','Del Pilar St.','Sampaguita St.','Maharlika Ave.'];
-    const baseDate = Date.now();
+function generateSampleApplications(count = 50) {
+    const sampleList = [
+        { name: 'Maria Lopez', email: 'reqacc257@gmail.com', reference: '20260724195010' },
+        { name: 'John Reyes', email: 'test@gmail.com', reference: '20260724195110' },
+        { name: 'Ana Santos', email: 'test@gmail.com', reference: '20260724195210' },
+        { name: 'Jose Cruz', email: 'test@gmail.com', reference: '20260724195310' },
+        { name: 'Nicole Ramos', email: 'test@gmail.com', reference: '20260724195410' },
+        { name: 'Paolo Garcia', email: 'test@gmail.com', reference: '20260724195510' },
+        { name: 'Liza Bautista', email: 'test@gmail.com', reference: '20260724195610' },
+        { name: 'Mark Villanueva', email: 'test@gmail.com', reference: '20260724195710' },
+        { name: 'Carla Mendoza', email: 'test@gmail.com', reference: '20260724195810' },
+        { name: 'Rico Dela Cruz', email: 'test@gmail.com', reference: '20260724195910' },
+        { name: 'Jasmine Aquino', email: 'test@gmail.com', reference: '20260724200010' },
+        { name: 'Neil Torres', email: 'test@gmail.com', reference: '20260724200110' },
+        { name: 'Krystal dela Paz', email: 'test@gmail.com', reference: '20260724200210' },
+        { name: 'Angelo Reyes', email: 'test@gmail.com', reference: '20260724200310' },
+        { name: 'Maria Santos', email: 'test@gmail.com', reference: '20260724200410' },
+        { name: 'Carlo Villanueva', email: 'test@gmail.com', reference: '20260724200510' },
+        { name: 'Emily Ramos', email: 'test@gmail.com', reference: '20260724200610' },
+        { name: 'Miguel Cruz', email: 'test@gmail.com', reference: '20260724200710' },
+        { name: 'Nina Lopez', email: 'test@gmail.com', reference: '20260724200810' },
+        { name: 'Carlo Santos', email: 'test@gmail.com', reference: '20260724200910' },
+        { name: 'Tessa Garcia', email: 'test@gmail.com', reference: '20260724201010' },
+        { name: 'Jomar Bautista', email: 'test@gmail.com', reference: '20260724201110' },
+        { name: 'Angelica Cruz', email: 'test@gmail.com', reference: '20260724201210' },
+        { name: 'Vince Dela Rosa', email: 'test@gmail.com', reference: '20260724201310' },
+        { name: 'Sofia Morales', email: 'test@gmail.com', reference: '20260724201410' },
+        { name: 'Danny Lopez', email: 'test@gmail.com', reference: '20260724201510' },
+        { name: 'Mia Ramos', email: 'test@gmail.com', reference: '20260724201610' },
+        { name: 'Tristan Villanueva', email: 'test@gmail.com', reference: '20260724201710' },
+        { name: 'Paula Santos', email: 'test@gmail.com', reference: '20260724201810' },
+        { name: 'Jerome Cruz', email: 'test@gmail.com', reference: '20260724201910' },
+        { name: 'Rachel Aquino', email: 'test@gmail.com', reference: '20260724202010' },
+        { name: 'Nelson Reyes', email: 'test@gmail.com', reference: '20260724202110' },
+        { name: 'Carmina Dela Cruz', email: 'test@gmail.com', reference: '20260724202210' },
+        { name: 'Bryan Garcia', email: 'test@gmail.com', reference: '20260724202310' },
+        { name: 'Arlene Torres', email: 'test@gmail.com', reference: '20260724202410' },
+        { name: 'Felix Ramos', email: 'test@gmail.com', reference: '20260724202510' },
+        { name: 'Lanie Mendoza', email: 'test@gmail.com', reference: '20260724202610' },
+        { name: 'Jason Cruz', email: 'test@gmail.com', reference: '20260724202710' },
+        { name: 'Carla Villanueva', email: 'test@gmail.com', reference: '20260724202810' },
+        { name: 'Rodel Santos', email: 'test@gmail.com', reference: '20260724202910' },
+        { name: 'Bea Lopez', email: 'test@gmail.com', reference: '20260724203010' },
+        { name: 'Ivan Reyes', email: 'test@gmail.com', reference: '20260724203110' },
+        { name: 'Joy Dela Rosa', email: 'test@gmail.com', reference: '20260724203210' },
+        { name: 'Lance Malone', email: 'test@gmail.com', reference: '20260724203310' },
+        { name: 'May Santos', email: 'test@gmail.com', reference: '20260724203410' },
+        { name: 'Carlo Aquino', email: 'test@gmail.com', reference: '20260724203510' },
+        { name: 'Dianne Garcia', email: 'test@gmail.com', reference: '20260724203610' },
+        { name: 'Ron Cruz', email: 'test@gmail.com', reference: '20260724203710' },
+        { name: 'Pia Villanueva', email: 'test@gmail.com', reference: '20260724203810' },
+        { name: 'Ken Ramos', email: 'test@gmail.com', reference: '20260724203910' },
+        { name: 'Leila Mendoza', email: 'test@gmail.com', reference: '20260724204010' }
+    ];
+    const baseRefTime = Date.UTC(2026, 6, 24, 19, 50, 10);
+    const apps = sampleList.slice(0, count);
 
-    return Array.from({ length: count }, (_, index) => {
-        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const barangay = barangays[Math.floor(Math.random() * barangays.length)];
-        const school = schools[Math.floor(Math.random() * schools.length)];
-        const grade = grades[Math.floor(Math.random() * grades.length)];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-        const gender = genders[Math.floor(Math.random() * genders.length)];
-        const ambition = ambitions[Math.floor(Math.random() * ambitions.length)];
-        const whyScholar = reasons[Math.floor(Math.random() * reasons.length)];
-        const street = streetNames[Math.floor(Math.random() * streetNames.length)];
-        const address = `${Math.ceil(Math.random() * 120)} ${street}`;
-        const submittedAt = new Date(baseDate - Math.floor(Math.random() * 60) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        const id = baseDate + index;
-        const phone = `09${Math.floor(100000000 + Math.random() * 900000000)}`;
-        const totalIncome = 3500 + Math.floor(Math.random() * 22000);
-        const eduLevel = grade === 'Grade 11' || grade === 'Grade 12' ? 'SeniorHigh' : (['Grade 7','Grade 8','Grade 9','Grade 10'].includes(grade) ? 'JuniorHigh' : 'Elementary');
-
+    return apps.map((item, index) => {
+        const refDate = new Date(baseRefTime + index * 60 * 1000);
+        const ref = item.reference;
+        const submittedAt = refDate.toISOString();
         return {
-            id,
-            name: `${firstName} ${lastName}`,
-            barangay,
-            school,
-            grade,
-            status,
-            gender,
-            ambition,
-            whyScholar,
-            address: `${address}, Brgy. ${barangay}`,
-            contact: phone,
-            eduLevel,
-            sy: schoolYears[Math.floor(Math.random() * schoolYears.length)],
-            totalIncome,
-            date: submittedAt,
-            submittedAt,
-            created_at: submittedAt,
-            username: `user${id}`,
-            password: `pass${id}`,
-            portal_username: `user${id}`
+            id: index + 2,
+            name: item.name,
+            email: item.email,
+            status: 'Pending Review',
+            portal_username: `user${index + 1}`,
+            username: `user${index + 1}`,
+            password: `pass${index + 1}`,
+            password_hash: null,
+            reference_number: ref,
+            referenceNumber: ref,
+            date_label: 'Jul 24, 2026',
+            submitted_at: submittedAt,
+            status_updated_at: submittedAt,
+            submitted_data: '{}',
+            family_members: '[]',
+            properties: '[]',
+            can_provide: '[]',
+            school: 'Angat National High School',
+            grade: 'Grade 10',
+            barangay: 'Poblacion',
+            sy: '2026-2027',
+            contact: '09171234567',
+            address: '123 Sample St, Brgy. Poblacion',
+            why_scholar: 'Continue studies despite hardship',
+            total_income: '0',
+            total_expense: '0'
         };
     });
 }
@@ -2512,12 +2553,6 @@ function generateRandomApplications(count = 50) {
 /* ══════════════════════════════════════
    ANNOUNCEMENTS
 ══════════════════════════════════════ */
-function toggleSampleCredentials() {
-    const card = document.getElementById('sampleCredentialsCard');
-    if (!card) return;
-    card.style.display = card.style.display === 'block' ? 'none' : 'block';
-}
-
 async function sendAnnouncement() {
     const subject = document.getElementById('annSubject').value.trim();
     const message = document.getElementById('annMessage').value.trim();
