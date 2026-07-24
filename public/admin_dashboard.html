@@ -2418,7 +2418,7 @@ async function deleteEvent(id) {
     }
 }
 
-function openEventAttendance(evtId) {
+async function openEventAttendance(evtId) {
     currentEventId = evtId;
     const events = JSON.parse(localStorage.getItem('mefamdev_events') || '[]');
     const ev = events.find(e => e.id === evtId);
