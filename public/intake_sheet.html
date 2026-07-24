@@ -203,7 +203,17 @@
             display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
         }
         .prefill-bar p { font-size: .87rem; color: #2471a3; flex: 1; }
-        .prefill-bar select { width: auto; min-width: 260px; font-weight: 600; }
+        .prefill-bar select, .prefill-bar .search-input { width: auto; min-width: 260px; font-weight: 600; }
+        .search-input { width: 100%; padding: 10px 14px 10px 36px; border: 1.5px solid #d8e2ef; border-radius: 20px; background: #fff; color: var(--text); font-size: .9rem; }
+        .search-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,166,35,.12); }
+        .search-wrap { position: relative; width: 100%; max-width: 420px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #94a3b8; }
+        .search-results { display: grid; gap: 10px; width: 100%; }
+        .search-result-item { width: 100%; text-align: left; border: 1px solid rgba(26,46,68,.12); border-radius: 14px; background: #fff; padding: 12px 14px; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+        .search-result-item:hover { transform: translateY(-1px); border-color: rgba(245,166,35,.35); box-shadow: 0 12px 30px rgba(15,23,42,.08); }
+        .search-result-title { font-size: .95rem; font-weight: 700; margin-bottom: 4px; }
+        .search-result-meta { font-size: .82rem; color: #64748b; }
+        .prefill-detail-card { background: #fff; border: 1px solid rgba(26,46,68,.12); border-radius: 18px; padding: 18px; box-shadow: 0 16px 40px rgba(15,23,42,.06); width: 100%; }
 
         /* Print styles */
         @media print {
@@ -240,9 +250,12 @@
         <!-- Prefill from applications -->
         <div class="prefill-bar">
             <p>⚡ <strong>Auto-fill from application:</strong> Select a pending applicant to pre-populate this form.</p>
-            <select id="prefillSelect" onchange="prefillFromApp(this.value)">
-                <option value="">— Select Applicant —</option>
-            </select>
+            <div class="search-wrap" style="max-width:420px; margin-top:10px;">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="prefillSearch" class="search-input" placeholder="Search applicants by name, barangay, or grade..." oninput="filterPrefillApplicants()">
+            </div>
+            <div id="prefillResults" class="search-results" style="margin-top:12px;"></div>
+            <div id="prefillDetail" class="prefill-detail-card" style="display:none; margin-top:16px;"></div>
         </div>
 
         <!-- Top meta -->
@@ -434,8 +447,7 @@ window.onload = function () {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (id) {
-        document.getElementById('prefillSelect').value = id;
-        prefillFromApp(id);
+        selectPrefillApplicant(id);
     }
 };
 
@@ -477,12 +489,71 @@ function addActionRow() {
 
 /* ── Prefill from localStorage apps ── */
 function populatePrefill() {
-    const sel = document.getElementById('prefillSelect');
     const apps = JSON.parse(localStorage.getItem('mefamdev_apps')) || [];
-    sel.innerHTML = '<option value="">— Select Applicant —</option>';
-    apps.forEach(a => {
-        sel.innerHTML += `<option value="${a.id}">${a.name} (${a.grade}) — ${a.status}</option>`;
+    window.prefillApplicantsCache = apps;
+    renderPrefillSearchList(apps);
+}
+
+function renderPrefillSearchList(apps) {
+    const results = document.getElementById('prefillResults');
+    const detail = document.getElementById('prefillDetail');
+    if (!results) return;
+    results.innerHTML = apps.length === 0
+        ? '<div class="empty-state" style="padding:14px; border-radius:14px; background:#fff; color:#666;">No applicants found.</div>'
+        : apps.map(a => `
+            <button type="button" class="search-result-item" onclick="selectPrefillApplicant(${a.id})">
+                <div class="search-result-title">${a.name || 'Unknown Applicant'}</div>
+                <div class="search-result-meta">${a.grade || 'No grade'} · ${a.status || 'No status'}${a.barangay ? ' · ' + a.barangay : ''}</div>
+            </button>
+        `).join('');
+    if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
+}
+
+function filterPrefillApplicants() {
+    const query = document.getElementById('prefillSearch')?.value.toLowerCase().trim() || '';
+    const apps = window.prefillApplicantsCache || [];
+    const filtered = query === '' ? apps : apps.filter(a => {
+        const name = (a.name || '').toLowerCase();
+        const school = (a.school || '').toLowerCase();
+        const barangay = (a.barangay || '').toLowerCase();
+        const status = (a.status || '').toLowerCase();
+        const grade = (a.grade || '').toLowerCase();
+        const nameParts = name.split(/\s+/);
+        const starts = nameParts.some(part => part.startsWith(query));
+        return starts || name.includes(query) || school.includes(query) || barangay.includes(query) || status.includes(query) || grade.includes(query);
     });
+    renderPrefillSearchList(filtered);
+}
+
+function selectPrefillApplicant(appId) {
+    const apps = window.prefillApplicantsCache || [];
+    const app = apps.find(a => a.id == appId);
+    if (!app) return;
+    const input = document.getElementById('prefillSearch');
+    if (input) input.value = app.name || '';
+    renderPrefillApplicantDetails(app);
+    prefillFromApp(appId);
+}
+
+function renderPrefillApplicantDetails(app) {
+    const detail = document.getElementById('prefillDetail');
+    if (!detail) return;
+    detail.style.display = 'grid';
+    detail.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <div>
+                <div style="font-size:1rem; font-weight:700; color: var(--navy);">${app.name || 'Unknown Applicant'}</div>
+                <div style="font-size:.82rem; color:#64748b;">${app.grade || 'No grade'} · ${app.school || 'No school'}${app.barangay ? ' · ' + app.barangay : ''}</div>
+            </div>
+            <div style="background:#e6f7f0; color:#1f8a6c; border-radius:999px; padding:8px 14px; font-size:.78rem; font-weight:700;">${app.status || 'Pending'}</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px;">
+            <div style="background:#fff; border:1px solid rgba(26,46,68,.08); border-radius:14px; padding:12px;"><div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.08em;">Barangay</div><div style="font-weight:700; color:var(--navy);">${app.barangay || 'N/A'}</div></div>
+            <div style="background:#fff; border:1px solid rgba(26,46,68,.08); border-radius:14px; padding:12px;"><div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.08em;">Contact</div><div style="font-weight:700; color:var(--navy);">${app.contact || 'N/A'}</div></div>
+            <div style="background:#fff; border:1px solid rgba(26,46,68,.08); border-radius:14px; padding:12px;"><div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.08em;">School</div><div style="font-weight:700; color:var(--navy);">${app.school || 'N/A'}</div></div>
+            <div style="background:#fff; border:1px solid rgba(26,46,68,.08); border-radius:14px; padding:12px;"><div style="font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.08em;">Gender</div><div style="font-weight:700; color:var(--navy);">${app.gender || 'N/A'}</div></div>
+        </div>
+    `;
 }
 
 function prefillFromApp(appId) {
@@ -491,6 +562,8 @@ function prefillFromApp(appId) {
     const a = apps.find(x => x.id == appId);
     if (!a) return;
     linkedAppId = a.id;
+    const input = document.getElementById('prefillSearch');
+    if (input) input.value = a.name || '';
 
     // Personal
     setVal('iName', a.name || '');
@@ -513,7 +586,6 @@ function prefillFromApp(appId) {
     // Family composition
     const tbody = document.getElementById('famTableBody');
     while (tbody.rows.length > 0) tbody.removeChild(tbody.lastChild);
-
     const members = a.familyMembers || [];
     const total = Math.max(members.length, 15);
     for (let i = 0; i < total; i++) {
@@ -531,10 +603,8 @@ function prefillFromApp(appId) {
         if (inputs[7]) inputs[7].value = f.income || '';
     }
 
-    // Spouse: try to find parent info
     const parent = members.find(m => ['Father','Ama','Mother','Ina'].includes(m.relation));
     if (parent) {
-        // Fill spouse-like info from first listed parent
         const spouseCandidate = members.find(m => m !== parent && ['Father','Ama','Mother','Ina'].includes(m.relation));
         if (spouseCandidate) {
             setVal('spName', spouseCandidate.name || '');
@@ -544,6 +614,9 @@ function prefillFromApp(appId) {
             setVal('spEduc', spouseCandidate.educ || '');
         }
     }
+
+    alert(`✅ Form pre-filled with data from ${a.name}'s application.`);
+}
 
     alert(`✅ Form pre-filled with data from ${a.name}'s application.`);
 }
@@ -650,7 +723,10 @@ function clearForm() {
     while (tbody.rows.length > 0) tbody.removeChild(tbody.lastChild);
     for (let i = 0; i < 15; i++) addFamRow();
     linkedAppId = null;
-    document.getElementById('prefillSelect').value = '';
+    const searchInput = document.getElementById('prefillSearch');
+    if (searchInput) searchInput.value = '';
+    const detail = document.getElementById('prefillDetail');
+    if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
 }
 </script>
 </body>
