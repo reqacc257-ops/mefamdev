@@ -40,57 +40,21 @@
   "applications": [
     {
       "id": 1,
-      "name": "Reset Test Applicant",
-      "email": "applicant@example.com",
-      "status": "Pending Review",
-      "reset_token": "acbcdea0041de1e741b5211d819e59a2"
+      "name": "Student One",
+      "status": "Accepted"
     }
   ],
   "families": [],
   "events": [
     {
       "id": 1,
-      "name": "Test Event",
-      "date": "2026-07-06",
+      "name": "Orientation",
+      "date": "2026-07-24",
       "venue": "Office",
-      "max_att": 30
-    },
-    {
-      "id": 2,
-      "name": "Test Event 2",
-      "date": "2026-07-06",
-      "venue": "Office",
-      "max_att": 30
-    },
-    {
-      "id": 3,
-      "name": "Test Event 3",
-      "date": "2026-07-06",
-      "venue": "Office",
-      "max_att": 30
-    },
-    {
-      "id": 4,
-      "name": "Test Event 4",
-      "date": "2026-07-06",
-      "venue": "Office",
-      "max_att": 30
-    },
-    {
-      "id": 5,
-      "name": "Node Test Event",
-      "date": "2026-07-06",
-      "venue": "Office",
-      "max_att": 30
+      "max_att": 50
     }
   ],
-  "event_attendance": [
-    {
-      "id": 1,
-      "event_id": 7,
-      "app_id": 21
-    }
-  ],
+  "event_attendance": [],
   "absences": [],
   "grades": [
     {
@@ -116,6 +80,33 @@
       "file_name": "image/jpeg",
       "file_type": "data:image/jpeg;base64,abc123",
       "file_data": "camera"
+    }
+  ],
+  "event_sessions": [
+    {
+      "id": 1,
+      "event_id": 1,
+      "code": "WHZJU",
+      "started_at": "2026-07-24T05:46:13.612Z",
+      "expires_at": "2026-07-24T05:51:13.613Z"
+    }
+  ],
+  "event_checkins": [
+    {
+      "id": 1,
+      "event_id": 1,
+      "session_id": 1,
+      "student_id": "ST-001",
+      "student_name": "Student One",
+      "checked_in_at": "2026-07-24T05:46:13.627Z"
+    },
+    {
+      "id": 2,
+      "event_id": 1,
+      "session_id": 1,
+      "student_id": "ST-001",
+      "student_name": "Student One",
+      "checked_in_at": "2026-07-24T05:46:13.633Z"
     }
   ]
 }
