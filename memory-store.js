@@ -4,6 +4,7 @@ const path = require('path');
 class MemoryStore {
   constructor(filePath) {
     this.filePath = filePath || path.join(process.cwd(), 'data', 'mefamdev.json');
+    this.fileMtime = 0;
     this.data = {
       staff: [],
       applications: [],
@@ -29,22 +30,47 @@ class MemoryStore {
   load() {
     try {
       if (fs.existsSync(this.filePath)) {
+        const stats = fs.statSync(this.filePath);
         const raw = fs.readFileSync(this.filePath, 'utf8');
         if (raw) {
           const parsed = JSON.parse(raw);
           this.data = { ...this.data, ...parsed };
         }
+        this.fileMtime = stats.mtimeMs || 0;
       }
     } catch (error) {
       console.warn('Using fresh JSON store because persistence file could not be read:', error.message);
     }
   }
 
+  reloadIfNeeded() {
+    try {
+      if (!fs.existsSync(this.filePath)) return;
+      const stats = fs.statSync(this.filePath);
+      if (stats.mtimeMs > this.fileMtime) {
+        const raw = fs.readFileSync(this.filePath, 'utf8');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          this.data = { ...this.data, ...parsed };
+        }
+        this.fileMtime = stats.mtimeMs || 0;
+      }
+    } catch (error) {
+      console.warn('Unable to reload JSON store file:', error.message);
+    }
+  }
+
   save() {
     fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
+    try {
+      this.fileMtime = fs.statSync(this.filePath).mtimeMs || this.fileMtime;
+    } catch (_) {
+      // Ignore stat errors after write.
+    }
   }
 
   prepare(query) {
+    this.reloadIfNeeded();
     return new QueryBuilder(this, query);
   }
 
