@@ -32,6 +32,29 @@ function findStoredApplicant(identifier, name, password) {
   const apps = readStoredApplications();
   const normalizedIdentifier = String(identifier || '').trim().toLowerCase();
   const normalizedDigits = normalizedIdentifier.replace(/\D+/g, '');
+  const matchingUsernameApps = apps.filter(app => {
+    const appUsername = String(app.username || app.portal_username || '').trim().toLowerCase();
+    return appUsername && appUsername === normalizedIdentifier;
+  });
+
+  if (matchingUsernameApps.length === 1) {
+    return matchingUsernameApps[0];
+  }
+  if (matchingUsernameApps.length > 1) {
+    const normalizedName = String(name || '').trim().toLowerCase();
+    if (normalizedName) {
+      const nameMatch = matchingUsernameApps.find(app => {
+        const appName = String(app.name || '').trim().toLowerCase();
+        if (!appName) return false;
+        if (appName === normalizedName) return true;
+        const normalizedParts = appName.split(/\s+/).filter(Boolean);
+        return normalizedParts.length > 0 && normalizedParts.every(part => normalizedName.includes(part));
+      });
+      if (nameMatch) return nameMatch;
+    }
+    return matchingUsernameApps[0];
+  }
+
   return apps.find(app => {
     const appId = String(app.id || '').trim().toLowerCase();
     const appUsername = String(app.username || app.portal_username || '').trim().toLowerCase();

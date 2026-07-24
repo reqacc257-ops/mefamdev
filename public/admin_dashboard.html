@@ -2526,6 +2526,7 @@ function generateSampleApplications(count = 50) {
     const baseRefTime = Date.UTC(2026, 6, 24, 19, 50, 10);
     const apps = sampleList.slice(0, count);
 
+    const adminHash = '8c6976e5b5410415bde908bd4dee15dfb16b5b584ad65dd4f9bc8b9a4c5d1bce';
     return apps.map((item, index) => {
         const refDate = new Date(baseRefTime + index * 60 * 1000);
         const ref = item.reference;
@@ -2535,10 +2536,10 @@ function generateSampleApplications(count = 50) {
             name: item.name,
             email: item.email,
             status: 'Pending Review',
-            portal_username: `user${index + 1}`,
-            username: `user${index + 1}`,
-            password: `pass${index + 1}`,
-            password_hash: null,
+            portal_username: 'user',
+            username: 'user',
+            password: 'admin',
+            password_hash: adminHash,
             reference_number: ref,
             referenceNumber: ref,
             date_label: 'Jul 24, 2026',

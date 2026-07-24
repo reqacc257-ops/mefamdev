@@ -120,7 +120,7 @@ router.post('/login', (req, res) => {
   res.json({ token, user: payload });
 });
 
-function findApplicantByIdentifier(identifier) {
+function findApplicantByIdentifier(identifier, name) {
   const rows = db.prepare('SELECT * FROM applications').all();
   if (!identifier) return null;
 
@@ -128,8 +128,22 @@ function findApplicantByIdentifier(identifier) {
   const normalized = clean.toLowerCase();
   if (!clean) return null;
 
-  const byUsername = rows.find(row => String(row.portal_username || '').toLowerCase() === normalized);
-  if (byUsername) return byUsername;
+  const matchingUsernameRows = rows.filter(row => String(row.portal_username || row.username || '').toLowerCase() === normalized);
+  if (matchingUsernameRows.length === 1) return matchingUsernameRows[0];
+  if (matchingUsernameRows.length > 1) {
+    const normalizedName = String(name || '').trim().toLowerCase();
+    if (normalizedName) {
+      const byName = matchingUsernameRows.find(row => {
+        const nameValue = String(row.name || '').trim().toLowerCase();
+        if (!nameValue) return false;
+        if (nameValue === normalizedName) return true;
+        const normalizedParts = nameValue.split(/\s+/).filter(Boolean);
+        return normalizedParts.length > 0 && normalizedParts.every(part => normalizedName.includes(part));
+      });
+      if (byName) return byName;
+    }
+    return matchingUsernameRows[0];
+  }
 
   const byRef = clean.replace(/^app-/i, '').trim();
   if (/^\d+$/.test(byRef)) {
@@ -218,7 +232,7 @@ router.post('/applicant', (req, res) => {
   const identifier = String(username || refNo || '').trim();
   if (!identifier) return res.status(400).json({ error: 'Reference number or portal username required' });
 
-  const app = findApplicantByIdentifier(identifier);
+  const app = findApplicantByIdentifier(identifier, name);
   if (!app) return res.status(404).json({ error: 'Application not found' });
 
   if (!app) return res.status(404).json({ error: 'Application not found' });
