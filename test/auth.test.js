@@ -109,6 +109,69 @@ test('applicant auth accepts a timestamp-style reference number and password', a
   }
 });
 
+test('applicant auth accepts a compact reference number without slashes', async () => {
+  db.data.applications = [];
+  const passwordHash = crypto.createHash('sha256').update('secret123').digest('hex');
+  const referenceNumber = '20260724195110';
+  db.prepare(
+    'INSERT INTO applications (name, portal_username, password_hash, reference_number, status) VALUES (?, ?, ?, ?, ?)'
+  ).run('Slashless Applicant', 'slashless', passwordHash, referenceNumber, 'Pending Review');
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', authRouter);
+
+  const server = app.listen(0);
+  await new Promise(resolve => server.once('listening', resolve));
+
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/auth/applicant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refNo: referenceNumber, password: 'secret123' })
+    });
+    const body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(body.user?.type, 'applicant');
+    assert.equal(body.user?.appId, 1);
+  } finally {
+    server.close();
+  }
+});
+
+test('applicant auth accepts full applicant name for login', async () => {
+  db.data.applications = [];
+  const passwordHash = crypto.createHash('sha256').update('secret123').digest('hex');
+  db.prepare(
+    'INSERT INTO applications (name, portal_username, password_hash, status) VALUES (?, ?, ?, ?)' 
+  ).run('Maria Lopez', 'portaluser', passwordHash, 'Pending Review');
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', authRouter);
+
+  const server = app.listen(0);
+  await new Promise(resolve => server.once('listening', resolve));
+
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/auth/applicant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'Maria Lopez', password: 'secret123' })
+    });
+    const body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(body.user?.type, 'applicant');
+    assert.equal(body.user?.appId, 1);
+  } finally {
+    server.close();
+  }
+});
+
 test('forgot-password creates a reset token for any applicant email', async () => {
   db.data.applications = [];
   db.prepare(

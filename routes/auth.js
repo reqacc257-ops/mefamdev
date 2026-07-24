@@ -141,6 +141,15 @@ function findApplicantByIdentifier(identifier) {
   const compareDigits = (value) => normalizeReference(value).replace(/\D+/g, '');
   const targetDigits = compareDigits(clean);
 
+  const byName = rows.find(row => {
+    const nameValue = String(row.name || '').trim().toLowerCase();
+    if (!nameValue) return false;
+    if (nameValue === normalized) return true;
+    const normalizedParts = nameValue.split(/\s+/).filter(Boolean);
+    return normalizedParts.length > 0 && normalizedParts.every(part => normalized.includes(part));
+  });
+  if (byName) return byName;
+
   return rows.find(row => {
     const reference = normalizeReference(row.reference_number || row.referenceNumber || '');
     if (!reference) return false;

@@ -31,15 +31,23 @@ function readStoredApplications() {
 function findStoredApplicant(identifier, name, password) {
   const apps = readStoredApplications();
   const normalizedIdentifier = String(identifier || '').trim().toLowerCase();
+  const normalizedDigits = normalizedIdentifier.replace(/\D+/g, '');
   return apps.find(app => {
     const appId = String(app.id || '').trim().toLowerCase();
     const appUsername = String(app.username || app.portal_username || '').trim().toLowerCase();
-    const appReference = String(app.referenceNumber || '').trim().toLowerCase();
-    const nameMatches = !name || !String(name).trim() || String(app.name || '').toLowerCase().includes(String(name).trim().toLowerCase());
+    const appReference = String(app.referenceNumber || app.reference_number || '').trim().toLowerCase();
+    const appReferenceDigits = appReference.replace(/\D+/g, '');
+    const appName = String(app.name || '').trim().toLowerCase();
+    const nameMatches = !name || !String(name).trim() || (appName && String(app.name || '').toLowerCase().includes(String(name).trim().toLowerCase()));
     const passwordMatches = !password || String(password || '').trim() === '' || String(app.password || '') === String(password || '');
+
+    const referenceMatch = appReference && (appReference === normalizedIdentifier || (normalizedDigits && appReferenceDigits && appReferenceDigits === normalizedDigits));
+    const nameMatch = appName && (appName === normalizedIdentifier || normalizedIdentifier.includes(appName) || appName.includes(normalizedIdentifier));
+
     return (appId && appId === normalizedIdentifier)
         || (appUsername && appUsername === normalizedIdentifier)
-        || (appReference && appReference === normalizedIdentifier)
+        || referenceMatch
+        || nameMatch
         || (!normalizedIdentifier && nameMatches && passwordMatches);
   });
 }
