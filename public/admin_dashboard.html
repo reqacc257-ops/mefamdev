@@ -655,10 +655,6 @@
                 </div>
             </div>
 
-            <!-- Dev reset -->
-            <div style="margin-top:16px; text-align:right;" data-roles="director">
-                <button class="btn btn-red btn-sm" onclick="clearAllData()">delete Reset All Data (Dev)</button>
-            </div>
             <div style="margin-top:10px; text-align:right;" data-roles="director">
                 <button class="btn btn-gold btn-sm" onclick="seedSampleApplications(50)">Generate 50 Sample Applications</button>
             </div>
@@ -1007,7 +1003,8 @@
                     <h2 style="font-family:'DM Serif Display',serif; color:var(--navy);">Spiritual Formation</h2>
                     <p style="color:var(--text-muted); font-size:.87rem;">Manage formation events and track scholar attendance.</p>
                 </div>
-            <div class="grid-2eq" style="align-items:start;">
+            </div>
+            <div class="grid-2" style="align-items:start;">
                 <!-- Events list -->
                 <div class="card">
                     <div class="card-title">Upcoming Events</div>
@@ -1018,11 +1015,12 @@
                 <!-- Add event form -->
                 <div class="card">
                     <div class="card-title">Add New Event</div>
+                    <p style="margin-bottom:16px; color:var(--text-muted); font-size:.88rem; line-height:1.5;">Create an event with a date, venue, and capacity. Once added, mark attendance from the event list.</p>
                     <div style="margin-bottom:12px;"><label>Event Name</label><input type="text" id="evtName" placeholder="e.g. Values Formation Seminar"></div>
                     <div style="margin-bottom:12px;"><label>Date</label><input type="date" id="evtDate"></div>
                     <div style="margin-bottom:12px;"><label>Location / Venue</label><input type="text" id="evtVenue" placeholder="e.g. MEFAMDEV Office, Angat"></div>
-                    <div style="margin-bottom:14px;"><label>Max Attendees</label><input type="number" id="evtMax" value="75"></div>
-                    <button class="btn btn-navy" style="width:100%;" onclick="addEvent()">➕ Add Event</button>
+                    <div style="margin-bottom:14px;"><label>Capacity</label><input type="number" id="evtMax" value="75" min="1"></div>
+                    <button class="btn btn-navy" type="button" style="width:100%;" onclick="addEvent()">➕ Add Event</button>
                 </div>
             </div>
 
@@ -1302,7 +1300,6 @@
                     <div class="card-title">Data Management</div>
                     <p style="font-size:.87rem; color:var(--text-muted); margin-bottom:14px;">Export or reset application data.</p>
                     <button class="btn btn-ghost" style="width:100%; margin-bottom:10px;" onclick="exportData()">📥 Export Data as JSON</button>
-                    <button class="btn btn-red" style="width:100%;" onclick="clearAllData()">delete Reset All Data</button>
                 </div>
             </div>
         </div>
@@ -2373,12 +2370,6 @@ function openApplicantPortal(appId) {
     window.open('applicant_portal.html?preview=1', '_blank');
 }
 
-function clearAllData() {
-    if (!confirm('DANGER: Delete ALL applications and scholars?')) return;
-    localStorage.removeItem('mefamdev_apps');
-    location.reload();
-}
-
 function ensureSampleApplications() {
     const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
     if (apps.length === 0) {
@@ -2751,8 +2742,10 @@ async function addEvent() {
     const name = document.getElementById('evtName').value.trim();
     const date = document.getElementById('evtDate').value;
     const venue = document.getElementById('evtVenue').value.trim();
-    const max = parseInt(document.getElementById('evtMax').value) || 75;
+    let max = parseInt(document.getElementById('evtMax').value, 10);
     if (!name) { alert('Please enter an event name.'); return; }
+    if (!date) { alert('Please choose an event date.'); return; }
+    if (isNaN(max) || max < 1) max = 1;
 
     try {
         await MefamAPI.addEvent({ name, date, venue, max });
