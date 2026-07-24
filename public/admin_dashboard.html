@@ -2618,28 +2618,27 @@ function renderAttendanceSessionControls(ev) {
 
     device.innerHTML = `
         <button class="close-device" type="button" onclick="closeEventAttendancePanel()">×</button>
-        <div class="ad-top"><span style="width:8px;height:8px;border-radius:50%;background:var(--good,#6fcf97);box-shadow:0 0 8px var(--good,#6fcf97);"></span> <div style="flex:1;">Attendance session active</div></div>
+        <div class="ad-headline">
+            <div class="ad-status"><span class="ad-status-dot"></span>ATTENDANCE SESSION ACTIVE</div>
+            <div class="ad-clock-slim"><span class="ad-clock-badge">Live</span><span id="deviceTimer" class="ad-clock-slim-time">00:00:00</span></div>
+        </div>
         <div class="ad-title">${escapeHtml(ev.name || 'Event')}</div>
-        <div class="ad-meta">${escapeHtml(ev.date || '')} ${ev.venue ? '· ' + escapeHtml(ev.venue) : ''}</div>
-        <div class="ad-clock"><div class="ad-clock-badge">Live</div><div id="deviceTimer" class="ad-clock-time">00:00:00</div><div class="ad-clock-label">Session timer</div></div>
-        <div style="text-align:center; margin-bottom:6px;"><div class="ad-code-label">Show this code to students</div><div id="deviceCode" class="ad-code">${escapeHtml((active.code||'----').split('').join(' '))}</div></div>
+        <div class="ad-meta">${escapeHtml(ev.date || '')}${ev.venue ? ' · ' + escapeHtml(ev.venue) : ''}</div>
+        <div class="ad-code-shell">
+            <div class="ad-code-label">SHOW THIS CODE TO STUDENTS</div>
+            <div id="deviceCode" class="ad-code">${escapeHtml((active.code||'----').split('').join(' '))}</div>
+        </div>
         <div class="ad-bar"><div id="deviceBar"></div></div>
         <div class="ad-stats">
-            <div class="ad-stat"><div id="deviceCheckedIn" class="num">0</div><div style="font-size:11px; color:var(--text-lo); margin-top:4px;">Checked in</div></div>
-            <div style="width:1px; background:var(--panel-edge,#2a3f5a); margin:0 8px;"></div>
-            <div class="ad-stat"><div id="deviceSeconds" class="num">0s</div><div style="font-size:11px; color:var(--text-lo); margin-top:4px;">Code refresh</div></div>
+            <div class="ad-stat"><div id="deviceCheckedIn" class="num">0</div><div class="ad-stat-label">Checked in</div></div>
+            <div class="ad-divider"></div>
+            <div class="ad-stat"><div id="deviceSeconds" class="num">0s</div><div class="ad-stat-label">Code refresh</div></div>
         </div>
         <div class="ad-actions">
-            <button id="deviceEnd" class="btn btn-ghost" style="flex:1; border:1px solid var(--panel-edge,#2a3f5a);">End event</button>
-            <button id="deviceRefresh" class="btn btn-gold" style="flex:1;">New code</button>
+            <button id="deviceEnd" class="btn btn-ghost">End event</button>
+            <button id="deviceRefresh" class="btn btn-gold">New code</button>
         </div>
-        <div style="display:flex; gap:12px; align-items:flex-start; margin-top:12px;">
-            <div class="ad-qr"><img id="attendanceQRCode" src="" alt="QR" /></div>
-            <div style="flex:1;">
-                <div class="hint">Students enter this code in their portal with their name to be marked present.</div>
-                <div id="deviceRecent" class="ad-recent"></div>
-            </div>
-        </div>
+        <div class="ad-footer-note">Students enter this code in their portal with their name to be marked present.</div>
     `;
 
     container.appendChild(device);
@@ -2658,22 +2657,31 @@ function renderAttendanceSessionControls(ev) {
             .attendance-device .ad-title { font-size:16px; font-weight:700; color:#f8fbff; margin-bottom:2px; }
             .attendance-device .ad-meta { font-size:12px; color:rgba(248,251,255,.7); margin-bottom:14px; }
             .attendance-device .ad-code-label { font-size:10px; color:rgba(135,208,255,.8); text-transform:uppercase; letter-spacing:.18em; margin-bottom:6px; }
-            .attendance-device .ad-clock { margin-bottom:12px; display:flex; flex-direction:column; align-items:center; gap:4px; padding:18px 18px 16px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:18px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); width:100%; }
+            .attendance-device .ad-headline { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
+            .attendance-device .ad-status { display:flex; align-items:center; gap:10px; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.16em; color:#b6e8ff; }
+            .attendance-device .ad-status-dot { width:10px; height:10px; border-radius:50%; background: #6fcf97; box-shadow: 0 0 12px rgba(111,207,151,.35); }
+            .attendance-device .ad-clock-slim { display:flex; align-items:center; gap:10px; }
             .attendance-device .ad-clock-badge { text-transform:uppercase; letter-spacing:.12em; color:#7ad9ff; font-size:10px; font-weight:700; background:rgba(42,170,232,.12); padding:5px 12px; border-radius:999px; }
-            .attendance-device .ad-clock-time { font-family:'DM Serif Display',serif; font-size:40px; font-weight:700; color:#fff; letter-spacing:.18em; text-shadow:0 1px 12px rgba(0,0,0,.28); }
-            .attendance-device .ad-clock-label { font-size:11px; color:rgba(255,255,255,.7); }
+            .attendance-device .ad-clock-slim-time { font-family:'DM Serif Display',serif; font-size:22px; font-weight:700; color:#fff; letter-spacing:.12em; }
+            .attendance-device .ad-title { font-size:18px; font-weight:800; color:#fff; margin-bottom:6px; }
+            .attendance-device .ad-meta { font-size:12px; color:rgba(248,251,255,.7); margin-bottom:14px; }
+            .attendance-device .ad-code-shell { text-align:center; margin-bottom:14px; }
+            .attendance-device .ad-code-label { font-size:11px; text-transform:uppercase; letter-spacing:.22em; color:rgba(135,208,255,.8); margin-bottom:8px; }
+            .attendance-device .ad-code { font-family:'DM Serif Display',serif; font-size:48px; font-weight:800; letter-spacing:.22em; text-align:center; margin:0 auto 12px; color:#d7f3ff; }
+            .attendance-device .ad-bar { height:8px; width:100%; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin-bottom:18px; }
+            .attendance-device .ad-bar > div { height:100%; background:linear-gradient(90deg, #65c1ff, #57a0ff); transform-origin:left; }
+            .attendance-device .ad-stats { display:flex; gap:10px; padding:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:18px; margin-bottom:16px; }
+            .attendance-device .ad-stat { flex:1; text-align:center; }
+            .attendance-device .ad-stat .num { font-size:24px; font-weight:800; color:#e8f6ff; }
+            .attendance-device .ad-stat-label { font-size:11px; color:rgba(255,255,255,.7); margin-top:4px; letter-spacing:.04em; text-transform:uppercase; }
+            .attendance-device .ad-divider { width:1px; background:rgba(255,255,255,.12); margin:0 8px; }
+            .attendance-device .ad-actions { display:flex; gap:10px; margin-bottom:14px; }
+            .attendance-device .ad-actions .btn { flex:1; border-radius:14px; font-weight:700; padding:12px 14px; }
+            .attendance-device .ad-actions .btn-ghost { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.12); color:#d7e6ff; }
+            .attendance-device .ad-actions .btn-gold { background:linear-gradient(135deg,#69c9ff,#5e7aff); color:#fff; }
+            .attendance-device .ad-footer-note { font-size:11px; color:rgba(255,255,255,.68); line-height:1.5; text-align:center; }
             .attendance-device .close-device { position:absolute; top:18px; right:18px; width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:var(--text-hi); font-size:18px; font-weight:700; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: transform .2s, background .2s; }
             .attendance-device .close-device:hover { background:rgba(255,255,255,.12); transform:scale(1.05); }
-            .attendance-device .ad-code { font-family:monospace; font-size:42px; font-weight:700; letter-spacing:.16em; text-align:center; margin-bottom:10px; color:#d7f3ff; }
-            .attendance-device .ad-bar { height:6px; width:100%; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin-bottom:14px; }
-            .attendance-device .ad-bar > div { height:100%; background:linear-gradient(90deg, #65c1ff, #5b8bff); transform-origin:left; }
-            .attendance-device .ad-stats { display:flex; gap:10px; padding:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:16px; margin-bottom:14px; }
-            .attendance-device .ad-stat { flex:1; text-align:center; }
-            .attendance-device .ad-stat .num { font-size:20px; font-weight:800; color:#e8f6ff; }
-            .attendance-device .ad-actions { display:flex; gap:10px; }
-            .attendance-device .ad-actions .btn { flex:1; border-radius:12px; font-weight:700; padding:10px 12px; }
-            .attendance-device .ad-actions .btn-ghost { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); color:#d7e6ff; }
-            .attendance-device .ad-actions .btn-gold { background:linear-gradient(135deg,#69c9ff,#5e7aff); color:#fff; }
             .attendance-device .ad-qr { flex:0 0 160px; display:flex; align-items:center; justify-content:center; }
             .attendance-device #attendanceQRCode { width:160px; height:160px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:#fff; cursor:pointer; }
             .attendance-device .ad-recent { flex:1; max-height:180px; overflow:auto; margin-top:6px; }
@@ -2681,7 +2689,7 @@ function renderAttendanceSessionControls(ev) {
             @media (max-width:420px) {
                 .attendance-device { padding:14px; border-radius:16px; }
                 .attendance-device .ad-code { font-size:32px; }
-                .attendance-device .ad-clock-time { font-size:28px; }
+                .attendance-device .ad-clock-slim-time { font-size:22px; }
                 .attendance-device #attendanceQRCode { width:120px; height:120px; }
                 .attendance-device .ad-qr { flex:0 0 120px; }
             }
