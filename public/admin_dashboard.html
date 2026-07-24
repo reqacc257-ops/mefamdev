@@ -1256,18 +1256,26 @@
             <div class="grid-2eq" style="align-items:start;">
                 <!-- Intake Sheets -->
                 <div class="card">
-                    <div class="card-title">📄 Saved Intake Sheets</div>
-                    <div id="intakeSheetsList">
-                        <div class="empty-state"><div class="empty-icon">📄</div><p>No intake sheets saved yet.</p></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <div class="card-title">📄 Saved Intake Sheets <span id="savedIntakeCount" style="font-size:.82rem; color:var(--text-muted);"></span></div>
+                        <div class="search-wrap" style="max-width:320px; width:100%;">
+                            <span class="search-icon"></span>
+                            <input id="savedIntakeSearch" type="text" class="search-input" placeholder="Filter intake sheets..." oninput="filterSavedRecords()">
+                        </div>
                     </div>
+                    <div id="intakeSheetsList" style="overflow:auto; max-height:420px;"></div>
                 </div>
 
                 <!-- Staff Assessments -->
                 <div class="card">
-                    <div class="card-title">Saved Staff Assessments</div>
-                    <div id="assessmentsList">
-                        <div class="empty-state"><div class="empty-icon"></div><p>No assessments saved yet.</p></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <div class="card-title">Saved Staff Assessments <span id="savedAssessmentCount" style="font-size:.82rem; color:var(--text-muted);"></span></div>
+                        <div class="search-wrap" style="max-width:320px; width:100%;">
+                            <span class="search-icon"></span>
+                            <input id="savedAssessmentSearch" type="text" class="search-input" placeholder="Filter assessments..." oninput="filterSavedRecords()">
+                        </div>
                     </div>
+                    <div id="assessmentsList" style="overflow:auto; max-height:420px;"></div>
                 </div>
             </div>
         </div>
@@ -1678,52 +1686,90 @@ async function loadAllData() {
 
 /* ── Saved Records (Intake Sheets + Assessments) ── */
 function loadSavedRecords() {
-    // Intake sheets
-    const intakeList = document.getElementById('intakeSheetsList');
-    if (intakeList) {
-        const sheets = JSON.parse(localStorage.getItem('mefamdev_intake_sheets')) || [];
-        if (sheets.length === 0) {
-            intakeList.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><p>No intake sheets saved yet.</p></div>`;
-        } else {
-            intakeList.innerHTML = `<table><thead><tr><th>Case No.</th><th>Name</th><th>Date</th><th>Action</th></tr></thead><tbody>` +
-                sheets.map(s => `<tr>
-                    <td>${s.caseNo || '—'}</td>
-                    <td><strong>${s.name || '—'}</strong></td>
-                    <td style="color:var(--text-muted); font-size:.8rem;">${s.savedAt || s.caseDate || '—'}</td>
-                    <td>
-                        <button class="btn btn-gold btn-sm" onclick="openIntakeSheet(${s.linkedAppId||'null'})">Open</button>
-                        <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteRecord('mefamdev_intake_sheets',${s.id})">✕</button>
-                    </td>
-                </tr>`).join('') + `</tbody></table>`;
-        }
-    }
+    const intakeSheets = JSON.parse(localStorage.getItem('mefamdev_intake_sheets')) || [];
+    const assessments = JSON.parse(localStorage.getItem('mefamdev_assessments')) || [];
+    window.savedIntakeSheets = intakeSheets;
+    window.savedAssessments = assessments;
+    renderSavedIntakeSheets(intakeSheets);
+    renderSavedAssessments(assessments);
+}
 
-    // Assessments
-    const assList = document.getElementById('assessmentsList');
-    if (assList) {
-        const assessments = JSON.parse(localStorage.getItem('mefamdev_assessments')) || [];
-        if (assessments.length === 0) {
-            assList.innerHTML = `<div class="empty-state"><div class="empty-icon"></div><p>No assessments saved yet.</p></div>`;
-        } else {
-            assList.innerHTML = `<table><thead><tr><th>Family</th><th>Student</th><th>Result</th><th>Action</th></tr></thead><tbody>` +
-                assessments.map(a => {
-                    const badge = a.finalResult === 'above'
-                        ? `<span class="badge badge-green">Above Threshold</span>`
-                        : a.finalResult === 'below'
-                        ? `<span class="badge badge-red">Below Threshold</span>`
-                        : `<span class="badge badge-grey">Unset</span>`;
-                    return `<tr>
-                        <td><strong>${a.familySurname || '—'}</strong></td>
-                        <td style="font-size:.85rem;">${a.student || '—'}</td>
-                        <td>${badge}</td>
-                        <td>
-                            <button class="btn btn-gold btn-sm" onclick="openAssessment(${a.linkedAppId||'null'})">Open</button>
-                            <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteRecord('mefamdev_assessments',${a.id})">✕</button>
-                        </td>
-                    </tr>`;
-                }).join('') + `</tbody></table>`;
-        }
+function renderSavedIntakeSheets(sheets) {
+    const intakeList = document.getElementById('intakeSheetsList');
+    const countEl = document.getElementById('savedIntakeCount');
+    if (countEl) countEl.innerText = `(${sheets.length})`;
+    if (!intakeList) return;
+    if (sheets.length === 0) {
+        intakeList.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><p>No intake sheets saved yet.</p></div>`;
+        return;
     }
+    intakeList.innerHTML = `<table class="saved-records-table"><thead><tr><th>Case No.</th><th>Name</th><th>School</th><th>Date</th><th>Action</th></tr></thead><tbody>` +
+        sheets.map(s => `<tr>
+            <td>${s.caseNo || '—'}</td>
+            <td><strong>${s.name || '—'}</strong>${s.linkedAppId ? `<div style="font-size:.78rem; color:#64748b;">App #${s.linkedAppId}</div>` : ''}</td>
+            <td style="font-size:.85rem; color:#64748b;">${s.school || s.schoolName || '—'}</td>
+            <td style="color:var(--text-muted); font-size:.8rem;">${s.savedAt || s.caseDate || s.created_at || '—'}</td>
+            <td>
+                <button class="btn btn-gold btn-sm" onclick="openIntakeSheet(${s.linkedAppId||'null'})">Open</button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteRecord('mefamdev_intake_sheets',${s.id})">✕</button>
+            </td>
+        </tr>`).join('') + `</tbody></table>`;
+}
+
+function renderSavedAssessments(assessments) {
+    const assList = document.getElementById('assessmentsList');
+    const countEl = document.getElementById('savedAssessmentCount');
+    if (countEl) countEl.innerText = `(${assessments.length})`;
+    if (!assList) return;
+    if (assessments.length === 0) {
+        assList.innerHTML = `<div class="empty-state"><div class="empty-icon"></div><p>No assessments saved yet.</p></div>`;
+        return;
+    }
+    assList.innerHTML = `<table class="saved-records-table"><thead><tr><th>Family</th><th>Student</th><th>Final Result</th><th>Saved</th><th>Action</th></tr></thead><tbody>` +
+        assessments.map(a => {
+            const badge = a.finalResult === 'above'
+                ? `<span class="badge badge-green">Above Threshold</span>`
+                : a.finalResult === 'below'
+                ? `<span class="badge badge-red">Below Threshold</span>`
+                : `<span class="badge badge-grey">Unset</span>`;
+            return `<tr>
+                <td><strong>${a.familySurname || '—'}</strong>${a.linkedAppId ? `<div style="font-size:.78rem; color:#64748b;">App #${a.linkedAppId}</div>` : ''}</td>
+                <td style="font-size:.85rem; color:#64748b;">${a.student || '—'}</td>
+                <td>${badge}</td>
+                <td style="color:var(--text-muted); font-size:.8rem;">${a.savedAt || a.assessmentDate || a.created_at || '—'}</td>
+                <td>
+                    <button class="btn btn-gold btn-sm" onclick="openAssessment(${a.linkedAppId||'null'})">Open</button>
+                    <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteRecord('mefamdev_assessments',${a.id})">✕</button>
+                </td>
+            </tr>`;
+        }).join('') + `</tbody></table>`;
+}
+
+function filterSavedRecords() {
+    const intakeQuery = document.getElementById('savedIntakeSearch')?.value.toLowerCase().trim() || '';
+    const assessmentQuery = document.getElementById('savedAssessmentSearch')?.value.toLowerCase().trim() || '';
+    const intakes = window.savedIntakeSheets || JSON.parse(localStorage.getItem('mefamdev_intake_sheets') || '[]');
+    const assessments = window.savedAssessments || JSON.parse(localStorage.getItem('mefamdev_assessments') || '[]');
+
+    const filteredIntakes = intakeQuery === '' ? intakes : intakes.filter(s => {
+        const name = (s.name || '').toLowerCase();
+        const caseNo = (s.caseNo || '').toLowerCase();
+        const school = (s.school || s.schoolName || '').toLowerCase();
+        const barangay = (s.barangay || '').toLowerCase();
+        const notes = (s.notes || s.problem || s.background || '').toLowerCase();
+        return name.includes(intakeQuery) || caseNo.includes(intakeQuery) || school.includes(intakeQuery) || barangay.includes(intakeQuery) || notes.includes(intakeQuery);
+    });
+
+    const filteredAssessments = assessmentQuery === '' ? assessments : assessments.filter(a => {
+        const family = (a.familySurname || '').toLowerCase();
+        const student = (a.student || '').toLowerCase();
+        const result = (a.finalResult || '').toLowerCase();
+        const comments = (a.notes || a.assessmentNotes || a.background || '').toLowerCase();
+        return family.includes(assessmentQuery) || student.includes(assessmentQuery) || result.includes(assessmentQuery) || comments.includes(assessmentQuery);
+    });
+
+    renderSavedIntakeSheets(filteredIntakes);
+    renderSavedAssessments(filteredAssessments);
 }
 
 function openIntakeSheet(appId) {
