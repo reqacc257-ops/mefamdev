@@ -805,9 +805,7 @@
         <div style="background:#f0f4ff;border:1.5px solid #c9d7f5;border-radius:10px;padding:14px 18px;margin:18px 0;text-align:left;">
             <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7f8c8d;margin-bottom:6px;">Your Reference Number</p>
             <p id="refNumberDisplay" style="font-family:monospace;font-size:1.2rem;font-weight:700;color:#1a2e44;letter-spacing:.04em;">APP-—</p>
-            <p style="font-size:.77rem;color:#888;margin-top:5px;">Save this number to track your application status.</p>
-        </div>
-
+                <p id="refStatusDisplay" style="font-size:.9rem;font-weight:700;color:#e67e22;margin-top:6px;">Pending Review</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
             <button class="btn btn-primary" onclick="goToPortal()" style="width:100%;justify-content:center;background:#1a2e44;">
                 👁 Track My Application
@@ -1195,12 +1193,11 @@
     function formatReferenceNumber(date) {
         const pad = (value) => String(value).padStart(2, '0');
         const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
         const day = pad(date.getDate());
-        const hour = pad(date.getHours());
+        const month = date.getMonth() + 1;
+        const hour12 = date.getHours() % 12 || 12;
         const minute = pad(date.getMinutes());
-        const second = pad(date.getSeconds());
-        return `${year}/${month}/${day}/${hour}${minute}${second}`;
+        return `${year}${day}${month}${hour12}${minute}`;
     }
 </script>
 <script src="/mefamdev-api.js"></script>
@@ -1310,6 +1307,7 @@
                 apps.unshift(stored);
                 localStorage.setItem('mefamdev_apps', JSON.stringify(apps));
                 document.getElementById('refNumberDisplay').innerText = data.referenceNumber;
+                document.getElementById('refStatusDisplay').innerText = 'Pending Review';
                 document.getElementById('successMessage').style.display = 'flex';
             } else {
                 alert(res?.error || 'Unable to submit your application right now.');
