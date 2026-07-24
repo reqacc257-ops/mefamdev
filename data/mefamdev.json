@@ -37,13 +37,7 @@
       "initials": "PC"
     }
   ],
-  "applications": [
-    {
-      "id": 1,
-      "name": "Student One",
-      "status": "Accepted"
-    }
-  ],
+  "applications": [],
   "families": [],
   "events": [
     {
@@ -82,31 +76,6 @@
       "file_data": "camera"
     }
   ],
-  "event_sessions": [
-    {
-      "id": 1,
-      "event_id": 1,
-      "code": "WHZJU",
-      "started_at": "2026-07-24T05:46:13.612Z",
-      "expires_at": "2026-07-24T05:51:13.613Z"
-    }
-  ],
-  "event_checkins": [
-    {
-      "id": 1,
-      "event_id": 1,
-      "session_id": 1,
-      "student_id": "ST-001",
-      "student_name": "Student One",
-      "checked_in_at": "2026-07-24T05:46:13.627Z"
-    },
-    {
-      "id": 2,
-      "event_id": 1,
-      "session_id": 1,
-      "student_id": "ST-001",
-      "student_name": "Student One",
-      "checked_in_at": "2026-07-24T05:46:13.633Z"
-    }
-  ]
+  "event_sessions": [],
+  "event_checkins": []
 }
