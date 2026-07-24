@@ -583,7 +583,7 @@
 
             <!-- Dev reset -->
             <div style="margin-top:16px; text-align:right;" data-roles="director">
-                <button class="btn btn-red btn-sm" onclick="clearAllData()">🗑 Reset All Data (Dev)</button>
+                <button class="btn btn-red btn-sm" onclick="clearAllData()">delete Reset All Data (Dev)</button>
             </div>
         </div>
 
@@ -945,6 +945,9 @@
                         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eventAttendancePanel').style.display='none'">✕ Close</button>
                     </div>
                     <p style="font-size:.84rem; color:var(--text-muted); margin-bottom:14px;">Check off scholars who attended this event.</p>
+                    <div id="attendanceSessionControls" style="margin-bottom:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                        <!-- Filled dynamically: code, timer, speed, QR -->
+                    </div>
                     <div id="evtAttList"></div>
                     <div style="margin-top:16px; text-align:right;">
                         <button class="btn btn-navy" onclick="saveEventAttendance()">💾 Save Attendance</button>
@@ -989,7 +992,7 @@
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <button class="btn btn-ghost btn-sm" onclick="openAddFamilyModal(currentFamilyRecord)">✎ Edit</button>
-                                <button class="btn btn-red btn-sm" onclick="deleteFamily(currentFamilyId)">🗑 Remove</button>
+                                <button class="btn btn-red btn-sm" onclick="deleteFamily(currentFamilyId)">delete Remove</button>
                             </div>
                         </div>
                         <hr style="border:0; border-top:1px solid var(--border); margin-bottom:14px;">
@@ -1200,7 +1203,7 @@
                     <div class="card-title">Data Management</div>
                     <p style="font-size:.87rem; color:var(--text-muted); margin-bottom:14px;">Export or reset application data.</p>
                     <button class="btn btn-ghost" style="width:100%; margin-bottom:10px;" onclick="exportData()">📥 Export Data as JSON</button>
-                    <button class="btn btn-red" style="width:100%;" onclick="clearAllData()">🗑 Reset All Data</button>
+                    <button class="btn btn-red" style="width:100%;" onclick="clearAllData()">delete Reset All Data</button>
                 </div>
             </div>
         </div>
@@ -1240,6 +1243,7 @@
 </div>
 
 <script src="/mefamdev-api.js"></script>
+<script src="/lib/qrcode.min.js"></script>
 <script>
 /* ══════════════════════════════════════
    CORE STATE
@@ -2352,14 +2356,21 @@ function renderEvents() {
                 <td style="color:var(--text-muted); font-size:.82rem;">${ev.date || '—'}</td>
                 <td style="font-size:.82rem;">${ev.venue || '—'}</td>
                 <td><span class="badge ${badgeCls}">${attended}/${ev.max}</span></td>
-                <td style="display:flex; gap:8px; align-items:center;">${sessionHtml}<div style="margin-left:auto;"> <button class="btn btn-gold btn-sm" onclick="openEventAttendance(${ev.id})">📋 Attendance</button> <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteEvent(${ev.id})">🗑</button></div></td>
+                <td style="display:flex; gap:8px; align-items:center;">${sessionHtml}<div style="margin-left:auto;"> <button class="btn btn-gold btn-sm" onclick="openEventAttendance(${ev.id})">📋 Attendance</button> <button class="btn btn-ghost btn-sm" style="color:var(--red); margin-left:4px;" onclick="deleteEvent(${ev.id})">delete</button></div></td>
             </tr>`;
         }).join('') + `</tbody></table>`;
 }
 
 async function startEventSession(evtId) {
     try {
-        const res = await MefamAPI.startEventSession(evtId, 15);
+        // Ask staff for desired duration (minutes) and optional visual speed for the timer
+        let minutes = parseInt(prompt('Attendance duration in minutes (default 15):', '15') || '15', 10);
+        if (isNaN(minutes) || minutes <= 0) minutes = 15;
+        let speed = parseFloat(prompt('Visual speed multiplier for the timer (1 = real time):', String(__attendanceVisualSpeed || 1)) || String(__attendanceVisualSpeed || 1));
+        if (isNaN(speed) || speed <= 0) speed = 1;
+        __attendanceVisualSpeed = speed;
+        localStorage.setItem('attendance_speed', String(speed));
+        const res = await MefamAPI.startEventSession(evtId, minutes);
         if (!res?.ok) throw new Error(res?.error || 'Failed');
         await loadAllData();
         renderEvents();
@@ -2429,6 +2440,8 @@ async function openEventAttendance(evtId) {
     const scholars = apps.filter(a => a.status === 'Accepted');
     document.getElementById('evtAttTitle').textContent = 'Attendance — ' + ev.name + ' (' + (ev.date||'') + ')';
     const list = document.getElementById('evtAttList');
+    // Render session controls (timer, speed, QR)
+    try { renderAttendanceSessionControls(ev); } catch (e) { console.error('session controls render failed', e); }
     if (scholars.length === 0) {
         list.innerHTML = '<p style="color:var(--text-muted); font-size:.87rem;">No accepted scholars yet.</p>';
     } else {
@@ -2469,6 +2482,171 @@ async function saveEventAttendance() {
         console.error('Failed to save attendance:', error);
         alert('Unable to save attendance right now.');
     }
+}
+
+// Visual attendance timer and QR helpers
+let __attendanceTimerInterval = null;
+let __attendanceVisualSpeed = parseFloat(localStorage.getItem('attendance_speed') || '1') || 1;
+
+function renderAttendanceSessionControls(ev) {
+    const container = document.getElementById('attendanceSessionControls');
+    if (!container) return;
+    container.innerHTML = '';
+    const active = ev.activeAttendanceSession || null;
+    if (!active) {
+        const startBtn = document.createElement('button');
+        startBtn.className = 'btn btn-green btn-sm';
+        startBtn.textContent = '▶ Start (custom)';
+        startBtn.onclick = () => startEventSession(ev.id);
+        container.appendChild(startBtn);
+        return;
+    }
+
+    const codeDiv = document.createElement('div');
+    codeDiv.style.fontSize = '.95rem';
+    codeDiv.innerHTML = `Code: <strong style="letter-spacing:2px; font-size:1.05rem;">${active.code}</strong>`;
+    container.appendChild(codeDiv);
+
+    const timerDiv = document.createElement('div');
+    timerDiv.id = 'attendanceTimer';
+    timerDiv.style.fontSize = '.9rem';
+    timerDiv.style.color = 'var(--text-muted)';
+    container.appendChild(timerDiv);
+
+    const speedLabel = document.createElement('label');
+    speedLabel.style.display = 'flex';
+    speedLabel.style.alignItems = 'center';
+    speedLabel.style.gap = '6px';
+    speedLabel.innerHTML = `<span style="font-size:.82rem; color:var(--text-muted);">Speed</span>`;
+    const speedInput = document.createElement('input');
+    speedInput.type = 'number';
+    speedInput.min = '0.25';
+    speedInput.step = '0.25';
+    speedInput.value = __attendanceVisualSpeed;
+    speedInput.style.width = '72px';
+    speedInput.onchange = () => {
+        const v = parseFloat(speedInput.value) || 1;
+        __attendanceVisualSpeed = v;
+        localStorage.setItem('attendance_speed', String(v));
+    };
+    speedLabel.appendChild(speedInput);
+    container.appendChild(speedLabel);
+
+    const qrImg = document.createElement('img');
+    qrImg.id = 'attendanceQRCode';
+    qrImg.alt = 'QR code';
+    qrImg.style.width = '110px';
+    qrImg.style.height = '110px';
+    qrImg.style.border = '1px solid var(--border)';
+    qrImg.style.padding = '6px';
+    qrImg.style.background = '#fff';
+    container.appendChild(qrImg);
+
+    const printBtn = document.createElement('button');
+    printBtn.className = 'btn btn-ghost btn-sm';
+    printBtn.textContent = 'Print QR';
+    printBtn.onclick = () => printAttendanceQRCode(active.code);
+    container.appendChild(printBtn);
+
+    // start visual timer and QR generation
+    startAttendanceVisualTimer(active.expiresAt);
+    generateAttendanceQRCode(active.code, ev.id);
+}
+
+function startAttendanceVisualTimer(expiresAt) {
+    const el = document.getElementById('attendanceTimer');
+    if (!el) return;
+    if (__attendanceTimerInterval) clearInterval(__attendanceTimerInterval);
+    function update() {
+        const now = Date.now();
+        const expiry = expiresAt ? new Date(expiresAt).getTime() : null;
+        let secs = expiry ? Math.round((expiry - now) / 1000) : null;
+        if (secs === null) {
+            el.textContent = '(no expiry)';
+            return;
+        }
+        // visual speed multiplier: subtract more seconds per tick if >1
+        secs = Math.max(-1, secs);
+        const displaySecs = Math.max(0, secs);
+        const m = Math.floor(displaySecs / 60);
+        const s = displaySecs % 60;
+        el.textContent = `Expires in ${m}m ${s}s`;
+        // If expired, clear interval
+        if (secs <= 0) {
+            clearInterval(__attendanceTimerInterval);
+            __attendanceTimerInterval = null;
+            el.textContent = 'Expired';
+        }
+    }
+    update();
+    // tick faster/slower by applying visual multiplier on perceived decrement
+    __attendanceTimerInterval = setInterval(() => {
+        // We simply re-render based on real time; speed control will accelerate the displayed expiry by shifting the reference point
+        // To visually speed up, we simulate time moving forward by adding extra ms to now
+        const now = Date.now();
+        const fakeNow = now + Math.round((__attendanceVisualSpeed - 1) * 1000);
+        // hack: temporarily override Date.now within update via closure
+        const expiry = expiresAt ? new Date(expiresAt).getTime() : null;
+        if (!expiry) return update();
+        let secs = Math.round((expiry - fakeNow) / 1000);
+        secs = Math.max(-1, secs);
+        const displaySecs = Math.max(0, secs);
+        const m = Math.floor(displaySecs / 60);
+        const s = displaySecs % 60;
+        el.textContent = `Expires in ${m}m ${s}s`;
+        if (secs <= 0) {
+            clearInterval(__attendanceTimerInterval);
+            __attendanceTimerInterval = null;
+            el.textContent = 'Expired';
+        }
+    }, 1000);
+}
+
+function generateAttendanceQRCode(code, evtId) {
+    const img = document.getElementById('attendanceQRCode');
+    if (!img) return;
+    try {
+        const target = `${location.origin}/applicant_portal.html?code=${encodeURIComponent(code)}&event=${encodeURIComponent(evtId)}`;
+        // Prefer local QR generator when available (works offline); fallback to Google Charts.
+        if (window.QRCode) {
+            const holder = document.createElement('div');
+            holder.style.display = 'none';
+            document.body.appendChild(holder);
+            try {
+                new QRCode(holder, { text: target, width: 220, height: 220 });
+                // find canvas inside holder
+                const canvas = holder.querySelector('canvas');
+                if (canvas) {
+                    img.src = canvas.toDataURL('image/png');
+                } else {
+                    // fallback to data URL from SVG/img if any
+                    const innerImg = holder.querySelector('img');
+                    img.src = innerImg ? innerImg.src : '';
+                }
+            } finally {
+                setTimeout(() => holder.remove(), 300);
+            }
+        } else {
+            img.src = `https://chart.googleapis.com/chart?cht=qr&chs=220x220&chl=${encodeURIComponent(target)}`;
+        }
+    } catch (e) {
+        img.alt = code;
+    }
+}
+
+function printAttendanceQRCode(code) {
+    const target = `${location.origin}/applicant_portal.html?code=${encodeURIComponent(code)}`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Attendance QR</title><style>body{font-family:Arial,Helvetica,sans-serif; text-align:center; padding:24px;} .card{display:inline-block; border:1px solid #ddd; padding:18px;} img{width:260px;height:260px;} .code{font-size:20px; margin-top:12px; letter-spacing:3px; font-weight:700;}</style></head><body><div class="card"><img src="https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=${encodeURIComponent(target)}" alt="QR"><div class="code">${code}</div><div style="font-size:.9rem; color:#666; margin-top:8px;">Scan or enter this code at the applicant portal</div></div></body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) {
+        alert('Unable to open print window — please allow popups.');
+        return;
+    }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    // Give the window a short moment to load the image
+    setTimeout(() => w.print(), 600);
 }
 
 /* ══════════════════════════════════════
