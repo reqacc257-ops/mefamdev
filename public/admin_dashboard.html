@@ -304,7 +304,10 @@
         .search-input:focus { background: #fff; border-color: var(--gold); }
         .search-wrap { position: relative; }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: .9rem; color: #aaa; }
-        .search-results { display: grid; gap: 10px; }
+        .search-results { display: grid; gap: 10px; max-height: 180px; overflow-y: auto; }
+        .search-results::-webkit-scrollbar { width: 8px; }
+        .search-results::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .35); border-radius: 999px; }
+        .search-results::-webkit-scrollbar-track { background: rgba(15, 23, 42, .04); }
         .pending-result-item {
             width: 100%; text-align: left; border: 1px solid rgba(36,59,85,.12);
             border-radius: 14px; background: #fff; padding: 12px 14px;
