@@ -1849,7 +1849,7 @@ function renderRecentApps(apps) {
             <td style="color:var(--text-muted); font-size:.82rem;">${formatAppDate(a)}</td>
             <td>${statusBadge(a.status)}</td>
             <td><button class="btn btn-gold btn-sm" onclick="viewApp(${a.id})">View</button></td>
-        </tr>`}  }{).join('') || `<tr><td colspan="7" class="empty-state">No applications yet.</td></tr>`;
+        </tr>`).join('') || `<tr><td colspan="7" class="empty-state">No applications yet.</td></tr>`;
 }
 
 /* ── Full table ── */
