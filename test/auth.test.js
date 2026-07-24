@@ -66,6 +66,49 @@ test('auth lookup resolves an applicant by portal username', async () => {
   }
 });
 
+test('applicant auth accepts a timestamp-style reference number and password', async () => {
+  db.data.applications = [];
+  const passwordHash = crypto.createHash('sha256').update('secret123').digest('hex');
+  const referenceNumber = '2026/07/24/153022';
+  db.prepare(
+    'INSERT INTO applications (name, portal_username, password_hash, reference_number, status) VALUES (?, ?, ?, ?, ?)'
+  ).run('Timestamp Ref Applicant', 'portaluser', passwordHash, referenceNumber, 'Pending Review');
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', authRouter);
+
+  const server = app.listen(0);
+  await new Promise(resolve => server.once('listening', resolve));
+
+  try {
+    const { port } = server.address();
+    const lookupRes = await fetch(`http://127.0.0.1:${port}/api/auth/lookup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: referenceNumber })
+    });
+    const lookupBody = await lookupRes.json();
+
+    assert.equal(lookupRes.status, 200);
+    assert.equal(lookupBody.applicant?.id, 1);
+    assert.equal(lookupBody.applicant?.username, 'portaluser');
+
+    const loginRes = await fetch(`http://127.0.0.1:${port}/api/auth/applicant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refNo: referenceNumber, password: 'secret123' })
+    });
+    const loginBody = await loginRes.json();
+
+    assert.equal(loginRes.status, 200);
+    assert.equal(loginBody.user?.type, 'applicant');
+    assert.equal(loginBody.user?.appId, 1);
+  } finally {
+    server.close();
+  }
+});
+
 test('forgot-password creates a reset token for any applicant email', async () => {
   db.data.applications = [];
   db.prepare(

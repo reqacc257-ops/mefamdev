@@ -126,7 +126,6 @@ function findApplicantByIdentifier(identifier) {
 
   const clean = String(identifier).trim();
   const normalized = clean.toLowerCase();
-
   if (!clean) return null;
 
   const byUsername = rows.find(row => String(row.portal_username || '').toLowerCase() === normalized);
@@ -134,10 +133,21 @@ function findApplicantByIdentifier(identifier) {
 
   const byRef = clean.replace(/^app-/i, '').trim();
   if (/^\d+$/.test(byRef)) {
-    return db.prepare('SELECT * FROM applications WHERE id = ?').get(byRef);
+    const appById = db.prepare('SELECT * FROM applications WHERE id = ?').get(byRef);
+    if (appById) return appById;
   }
 
-  return null;
+  const normalizeReference = (value) => String(value || '').trim().toLowerCase();
+  const compareDigits = (value) => normalizeReference(value).replace(/\D+/g, '');
+  const targetDigits = compareDigits(clean);
+
+  return rows.find(row => {
+    const reference = normalizeReference(row.reference_number || row.referenceNumber || '');
+    if (!reference) return false;
+    if (reference === normalized) return true;
+    if (targetDigits && compareDigits(reference) === targetDigits) return true;
+    return false;
+  }) || null;
 }
 
 router.post('/lookup', (req, res) => {

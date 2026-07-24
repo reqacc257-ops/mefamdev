@@ -537,7 +537,7 @@ function renderPortal(app, session) {
 
     // Hero
     document.getElementById('heroName').innerText = appData.name || 'Applicant';
-    document.getElementById('heroRef').innerText = `Reference: APP-${appData.id}`;
+    document.getElementById('heroRef').innerText = `Reference: ${appData.referenceNumber || 'APP-' + appData.id}`;
     document.getElementById('heroSchool').innerText = `${appData.grade || '—'} · ${appData.school || '—'} · S.Y. ${appData.sy || '—'}`;
 
     // Status config
@@ -554,7 +554,7 @@ function renderPortal(app, session) {
     document.getElementById('heroStatus').innerText = cfg.label;
 
     // Details
-    document.getElementById('dRef').innerText = `APP-${appData.id}`;
+    document.getElementById('dRef').innerText = `${appData.referenceNumber || 'APP-' + appData.id}`;
     document.getElementById('dSY').innerText = appData.sy || '—';
     document.getElementById('dDate').innerText = appData.date || '—';
     document.getElementById('dSchool').innerText = appData.school || '—';

@@ -318,7 +318,7 @@
             <div class="input-wrap">
                 <span class="input-icon" id="usernameIcon">👤</span>
                 <input type="text" id="unifiedUsername"
-                    placeholder="e.g. Director or APP-1001"
+                    placeholder="e.g. Director or 2026/07/24/153022"
                     autocomplete="username"
                     oninput="onUsernameInput(this)"
                     onkeydown="if(event.key==='Enter') proceedLogin()"
@@ -395,9 +395,9 @@
         <div id="hintApplicant" style="display:none;">
             <p>
                 <strong>Applicant access:</strong><br>
-                Your reference number is <code>APP-</code> followed by your application ID.<br>
-                Example: <code>APP-1001</code>, <code>APP-1002</code><br>
-                <em>You received this after submitting your application.</em>
+                Your reference number is based on the submission timestamp.<br>
+                Example: <code>2026/07/24/153022</code><br>
+                <em>You will receive this after submitting your application.</em>
             </p>
         </div>
     </div>
@@ -468,8 +468,9 @@ function onUsernameInput(input) {
 
     if (!v) return;
 
-    // ── Detect applicant: starts with "app-" or is purely numeric
-    const isAppRef = /^app-/i.test(rawValue.trim()) || /^\d+$/.test(v);
+    // ── Detect applicant: starts with "app-", is a timestamp-style reference, or is numeric
+    const isDateRef = /^\d{4}\/\d{2}\/\d{2}\/\d{6}$/.test(rawValue.trim()) || /^\d{14}$/.test(rawValue.trim());
+    const isAppRef = /^app-/i.test(rawValue.trim()) || isDateRef || /^\d+$/.test(v);
 
     // ── Detect staff: exact username match
     const isStaff = STAFF_USERNAMES.includes(v);
@@ -489,11 +490,19 @@ function onUsernameInput(input) {
     } else if (isAppRef) {
         detectedType = 'applicant';
         const cleanId = rawValue.trim().replace(/^app-/i, '');
+        const normalizedInput = rawValue.trim().toLowerCase();
         const apps = JSON.parse(localStorage.getItem('mefamdev_apps') || '[]');
-        const found = apps.find(a => String(a.id) === cleanId);
-
+        const found = apps.find(a => {
+            const reference = String(a.referenceNumber || '').trim();
+            const normalizedReference = reference.toLowerCase();
+            const normalizedReferenceDigits = normalizedReference.replace(/\D+/g, '');
+            const inputDigits = normalizedInput.replace(/\D+/g, '');
+            return String(a.id) === cleanId
+                || normalizedReference === normalizedInput
+                || (inputDigits && normalizedReferenceDigits === inputDigits);
+        });
         if (found) {
-            showDetected('📋 Applicant — APP-' + found.id, '#e8f5e9', '#1b5e20', '#81c784');
+            showDetected('📋 Applicant — ' + (found.referenceNumber || 'APP-' + found.id), '#e8f5e9', '#1b5e20', '#81c784');
             document.getElementById('usernameHint').textContent = '';
         } else {
             showDetected('📋 Applicant Reference', '#fff8e1', '#6d4c00', '#ffd54f');
@@ -601,11 +610,15 @@ async function doStaffLogin(username) {
 async function doApplicantLogin(ref) {
     const nameInput = document.getElementById('unifiedName').value.trim();
     const pwInput = (document.getElementById('unifiedAppPassword')?.value || '').trim();
-    const cleanId = ref.replace(/^app-/i, '').trim();
-    const username = /^\d+$/.test(cleanId) ? '' : cleanId;
+    const raw = ref.trim();
+    const cleanRef = raw.replace(/^app-/i, '').trim();
+    const isNumericId = /^\d+$/.test(cleanRef);
+    const isTimestampRef = /^\d{4}\/\d{2}\/\d{2}\/\d{6}$/.test(cleanRef) || /^\d{14}$/.test(cleanRef);
+    const identifier = isNumericId || isTimestampRef ? cleanRef : raw;
+    const username = isNumericId || isTimestampRef ? '' : raw;
 
     try {
-        const res = await MefamAPI.loginApplicant(cleanId, nameInput, pwInput, username);
+        const res = await MefamAPI.loginApplicant(identifier, nameInput, pwInput, username);
         if (res?.token) {
             showLoading('Welcome!', () => {
                 window.location.assign('/applicant_portal.html');

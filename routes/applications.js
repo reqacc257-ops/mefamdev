@@ -43,6 +43,7 @@ function parseApp(row) {
     totalIncome:   row.total_income,
     totalExpense:  row.total_expense,
     whyScholar:    row.why_scholar,
+    referenceNumber: row.reference_number || row.referenceNumber || '',
     date:          row.date_label || row.date || '—',
     submittedData: (() => {
       try { return JSON.parse(row.submitted_data || '{}'); } catch { return row.submitted_data || {}; }
@@ -141,13 +142,13 @@ function submitPublicApplication(req, res) {
        talents, clubs, ambition, living_with, edu_level, prev_grade, prev_school,
        school, grade, degree, why_scholar, total_income, total_expense,
        family_members, properties, can_provide, status, date_label, password_hash, portal_username,
-       submitted_at, submitted_data, status_updated_at, status_history)
+       reference_number, submitted_at, submitted_data, status_updated_at, status_history)
     VALUES
       (@sy, @name, @address, @barangay, @dob, @age, @gender, @contact, @email, @religion, @birthplace,
        @talents, @clubs, @ambition, @living_with, @edu_level, @prev_grade, @prev_school,
        @school, @grade, @degree, @why_scholar, @total_income, @total_expense,
        @family_members, @properties, @can_provide, 'Pending Review', @date_label, @password_hash, @portal_username,
-       @submitted_at, @submitted_data, @status_updated_at, @status_history)
+       @reference_number, @submitted_at, @submitted_data, @status_updated_at, @status_history)
   `);
 
   const info = stmt.run({
@@ -171,16 +172,18 @@ function submitPublicApplication(req, res) {
     prev_school:   b.prevSchool     || '',
     school:        b.school         || '',
     grade:         b.grade          || '',
-    degree:        b.degree         || '',
+    degree:        b.degree          || '',
     why_scholar:   b.whyScholar     || '',
     total_income:  b.totalIncome    || '0',
     total_expense: b.totalExpense   || '0',
     family_members: JSON.stringify(b.familyMembers || []),
     properties:    JSON.stringify(b.properties    || []),
     can_provide:   JSON.stringify(b.canProvide    || []),
+    status:        'Pending Review',
     date_label:    b.date || b.dateLabel || b.applicationDate || b.application_date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     password_hash: b.password ? crypto.createHash('sha256').update(String(b.password)).digest('hex') : null,
     portal_username: b.username ? String(b.username).trim() : null,
+    reference_number: b.referenceNumber || b.reference_number || '',
     submitted_at: b.submittedAt || b.submitted_at || new Date().toISOString(),
     submitted_data: JSON.stringify(b.submittedData || {}),
     status_updated_at: b.statusUpdatedAt || b.status_updated_at || new Date().toISOString(),

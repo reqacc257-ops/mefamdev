@@ -34,9 +34,13 @@ function findStoredApplicant(identifier, name, password) {
   return apps.find(app => {
     const appId = String(app.id || '').trim().toLowerCase();
     const appUsername = String(app.username || app.portal_username || '').trim().toLowerCase();
+    const appReference = String(app.referenceNumber || '').trim().toLowerCase();
     const nameMatches = !name || !String(name).trim() || String(app.name || '').toLowerCase().includes(String(name).trim().toLowerCase());
     const passwordMatches = !password || String(password || '').trim() === '' || String(app.password || '') === String(password || '');
-    return (appId && appId === normalizedIdentifier) || (appUsername && appUsername === normalizedIdentifier) || (!normalizedIdentifier && nameMatches && passwordMatches);
+    return (appId && appId === normalizedIdentifier)
+        || (appUsername && appUsername === normalizedIdentifier)
+        || (appReference && appReference === normalizedIdentifier)
+        || (!normalizedIdentifier && nameMatches && passwordMatches);
   });
 }
 

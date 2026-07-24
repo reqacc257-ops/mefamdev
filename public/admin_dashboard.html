@@ -1774,9 +1774,9 @@ function filterSavedRecords() {
     renderSavedAssessments(filteredAssessments);
 }
 
-function openIntakeSheet(appId) {
-    const id = appId === null || appId === undefined || appId === 'null' || appId === 'undefined' ? null : appId;
-    const url = id ? `intake_sheet.html?id=${encodeURIComponent(id)}` : 'intake_sheet.html';
+function openIntakeSheet(recordId) {
+    const id = recordId === null || recordId === undefined || recordId === 'null' || recordId === 'undefined' ? null : recordId;
+    const url = id ? `intake_sheet.html?record=${encodeURIComponent(id)}` : 'intake_sheet.html';
     window.open(url, '_blank');
 }
 function openAssessment(appId) {

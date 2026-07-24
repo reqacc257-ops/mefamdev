@@ -1191,6 +1191,17 @@
         if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
         else { el.type = 'password'; btn.textContent = 'Show'; }
     }
+
+    function formatReferenceNumber(date) {
+        const pad = (value) => String(value).padStart(2, '0');
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hour = pad(date.getHours());
+        const minute = pad(date.getMinutes());
+        const second = pad(date.getSeconds());
+        return `${year}/${month}/${day}/${hour}${minute}${second}`;
+    }
 </script>
 <script src="/mefamdev-api.js"></script>
 <script>
@@ -1233,6 +1244,7 @@
 
         const submittedData = collectSubmittedFields();
         const now = new Date();
+        const referenceNumber = formatReferenceNumber(now);
         const username = document.getElementById('appUsername')?.value?.trim() || '';
         const password = document.getElementById('appPassword')?.value?.trim() || '';
         const email = document.getElementById('email')?.value?.trim() || '';
@@ -1242,6 +1254,7 @@
 
         const data = {
             id: Date.now(),
+            referenceNumber,
             sy: document.getElementById('sySelect').value,
             firstName: document.getElementById('firstName').value.trim(),
             middleName: document.getElementById('middleName').value.trim(),
@@ -1296,7 +1309,7 @@
                 if (stored.password) delete stored.password;
                 apps.unshift(stored);
                 localStorage.setItem('mefamdev_apps', JSON.stringify(apps));
-                document.getElementById('refNumberDisplay').innerText = 'APP-' + appId;
+                document.getElementById('refNumberDisplay').innerText = data.referenceNumber;
                 document.getElementById('successMessage').style.display = 'flex';
             } else {
                 alert(res?.error || 'Unable to submit your application right now.');
