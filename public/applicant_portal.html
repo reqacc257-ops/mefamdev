@@ -314,7 +314,7 @@
                     <div class="pt-label">Submitted</div>
                 </div>
                 <div class="pt-step" id="step-review">
-                    <div class="pt-dot">🔍</div>
+                    <div class="pt-dot"></div>
                     <div class="pt-label">Under Review</div>
                 </div>
                 <div class="pt-step" id="step-interview">
@@ -828,7 +828,7 @@ function buildTimeline(app) {
         events.push({ title: '⏳ Awaiting Staff Review', date: 'In queue', color: '#bbb', note: 'Your application is in the review queue. Please wait for further communication.' });
     }
     if (app.status === 'Interviewing' || app.status === 'Accepted') {
-        events.push({ title: '🔍 Application Under Review', date: 'Pending', color: '#e67e22', note: 'Your application has been received and is being reviewed by staff.' });
+        events.push({ title: 'Application Under Review', date: 'Pending', color: '#e67e22', note: 'Your application has been received and is being reviewed by staff.' });
         events.push({ title: '🗣️ Interview / Document Verification', date: 'Scheduled', color: '#f5a623', note: 'Please prepare all required documents. You will be contacted for scheduling.' });
     }
     if (app.status === 'Accepted') {

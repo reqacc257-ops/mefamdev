@@ -249,9 +249,9 @@
 
         <!-- Prefill from applications -->
         <div class="prefill-bar">
-            <p>⚡ <strong>Auto-fill from application:</strong> Select a pending applicant to pre-populate this form.</p>
+            <p>⚡ <strong>Auto-fill from application:</strong> Search applicants to pre-populate this form.</p>
             <div class="search-wrap" style="max-width:420px; margin-top:10px;">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon"></span>
                 <input type="text" id="prefillSearch" class="search-input" placeholder="Search applicants by name, barangay, or grade..." oninput="filterPrefillApplicants()">
             </div>
             <div id="prefillResults" class="search-results" style="margin-top:12px;"></div>
@@ -614,9 +614,6 @@ function prefillFromApp(appId) {
             setVal('spEduc', spouseCandidate.educ || '');
         }
     }
-
-    alert(`✅ Form pre-filled with data from ${a.name}'s application.`);
-}
 
     alert(`✅ Form pre-filled with data from ${a.name}'s application.`);
 }

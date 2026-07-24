@@ -469,7 +469,7 @@
         </div>
     
         <div class="nav-item" onclick="window.open('staff_assessment.html','_blank')" data-roles="director,program">
-            <span class="nav-icon">🔍</span> Staff Assessment
+            <span class="nav-icon"></span> Staff Assessment
         </div>
         <div class="nav-item" onclick="nav('saved-records',this)" data-roles="director,program">
             <span class="nav-icon">🗂️</span> Saved Records
@@ -512,7 +512,7 @@
             <span>📄</span> New Intake Sheet
         </button>
         <button class="public-form-btn" onclick="window.open('staff_assessment.html','_blank')">
-            <span>🔍</span> New Staff Assessment
+            <span></span> New Staff Assessment
         </button>
     </div>
 </aside>
@@ -668,7 +668,7 @@
                 </div>
                 <div style="display:flex; gap:10px;">
                     <div class="search-wrap">
-                        <span class="search-icon">🔍</span>
+                        <span class="search-icon"></span>
                         <input type="text" class="search-input" placeholder="Search by name, barangay..." id="appSearch" oninput="filterAppsTable()">
                     </div>
                     <button class="btn btn-gold" onclick="loadAllData()">🔄 Refresh</button>
@@ -728,7 +728,7 @@
             <div class="card" style="background:linear-gradient(135deg, #eaf3ff, #f0f8ff); border-left:5px solid var(--navy); margin-bottom:18px;">
                 <p style="font-size:.9rem; color:#444; margin-bottom:12px;">Search pending applicants to auto-fill the Social Worker Intake Sheet from their submitted application data.</p>
                 <div class="search-wrap" style="max-width:420px; margin-bottom:14px;">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon"></span>
                     <input type="text" id="pendingApplicantSearch" class="search-input" placeholder="Search pending applicants by name, school, or barangay..." oninput="filterPendingApplicants()">
                 </div>
                 <div id="pendingApplicantResults" class="search-results"></div>
@@ -830,7 +830,7 @@
             <div class="grid-2" style="align-items:start;">
                 <div class="card" style="padding:16px;">
                     <div class="search-wrap" style="margin-bottom:12px;">
-                        <span class="search-icon">🔍</span>
+                        <span class="search-icon"></span>
                         <input type="text" class="search-input" id="profileSearch" placeholder="Search scholars..." oninput="filterProfiles()">
                     </div>
                     <div id="profile-list" style="max-height:580px; overflow-y:auto;"></div>
@@ -943,7 +943,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                     <div class="card-title" style="margin:0;">Scholar Absence Log</div>
                     <div class="search-wrap" style="width:220px;">
-                        <span class="search-icon">🔍</span>
+                        <span class="search-icon"></span>
                         <input type="text" class="search-input" id="absenceSearch" placeholder="Search scholar..." oninput="filterAbsenceLog()">
                     </div>
                 </div>
@@ -1045,7 +1045,7 @@
                 <!-- Family list -->
                 <div class="card" style="padding:16px;">
                     <div class="search-wrap" style="margin-bottom:12px;">
-                        <span class="search-icon">🔍</span>
+                        <span class="search-icon"></span>
                         <input type="text" class="search-input" id="familySearch" placeholder="Search families..." oninput="filterFamilies()">
                     </div>
                     <div id="familyList" style="max-height:520px; overflow-y:auto;"></div>
@@ -1251,9 +1251,9 @@
 
                 <!-- Staff Assessments -->
                 <div class="card">
-                    <div class="card-title">🔍 Saved Staff Assessments</div>
+                    <div class="card-title">Saved Staff Assessments</div>
                     <div id="assessmentsList">
-                        <div class="empty-state"><div class="empty-icon">🔍</div><p>No assessments saved yet.</p></div>
+                        <div class="empty-state"><div class="empty-icon"></div><p>No assessments saved yet.</p></div>
                     </div>
                 </div>
             </div>
@@ -1688,7 +1688,7 @@ function loadSavedRecords() {
     if (assList) {
         const assessments = JSON.parse(localStorage.getItem('mefamdev_assessments')) || [];
         if (assessments.length === 0) {
-            assList.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No assessments saved yet.</p></div>`;
+            assList.innerHTML = `<div class="empty-state"><div class="empty-icon"></div><p>No assessments saved yet.</p></div>`;
         } else {
             assList.innerHTML = `<table><thead><tr><th>Family</th><th>Student</th><th>Result</th><th>Action</th></tr></thead><tbody>` +
                 assessments.map(a => {
@@ -1712,11 +1712,13 @@ function loadSavedRecords() {
 }
 
 function openIntakeSheet(appId) {
-    const url = appId ? `intake_sheet.html?id=${appId}` : 'intake_sheet.html';
+    const id = appId === null || appId === undefined || appId === 'null' || appId === 'undefined' ? null : appId;
+    const url = id ? `intake_sheet.html?id=${encodeURIComponent(id)}` : 'intake_sheet.html';
     window.open(url, '_blank');
 }
 function openAssessment(appId) {
-    const url = appId ? `staff_assessment.html?id=${appId}` : 'staff_assessment.html';
+    const id = appId === null || appId === undefined || appId === 'null' || appId === 'undefined' ? null : appId;
+    const url = id ? `staff_assessment.html?id=${encodeURIComponent(id)}` : 'staff_assessment.html';
     window.open(url, '_blank');
 }
 function deleteRecord(key, id) {
