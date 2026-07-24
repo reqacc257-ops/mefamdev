@@ -236,12 +236,102 @@
 
         /* Print */
         @media print {
-            body { background: #fff; padding: 0; }
-            .prefill-bar, .toolbar { display: none !important; }
-            .doc-header { background: #fff !important; color: #000 !important; border-bottom: 2px solid #000; }
-            .doc-header h1, .doc-header .org, .doc-header .sub { color: #000 !important; }
-            .legend-pill { display: none; }
-            .doc-body { box-shadow: none; padding: 20px; }
+            * {
+                color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            html, body {
+                background: #fff !important;
+                color: #000 !important;
+                font-size: 12pt;
+                line-height: 1.4;
+                margin: 0;
+                padding: 0;
+            }
+
+            body { padding: 20px; }
+            .shell { box-shadow: none !important; border: none !important; background: #fff !important; }
+            .prefill-bar, .toolbar, .legend-pill, button, input, select, .actions, .search-wrap { display: none !important; }
+
+            .doc-header {
+                background: #fff !important;
+                color: #000 !important;
+                border-bottom: 2px solid #000;
+                padding-bottom: 12px;
+                margin-bottom: 16px;
+            }
+            .doc-header h1,
+            .doc-header .org,
+            .doc-header .sub,
+            .doc-header .section-label,
+            .doc-header .doc-section-title {
+                color: #000 !important;
+            }
+
+            .doc-body {
+                box-shadow: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+            }
+
+            .doc-body > * {
+                color: #000 !important;
+                background: transparent !important;
+            }
+
+            .section-label {
+                color: #000 !important;
+                text-transform: uppercase;
+                letter-spacing: .08em;
+            }
+
+            .doc-section {
+                border: 1px solid #000 !important;
+                page-break-inside: avoid;
+                margin-bottom: 16px;
+                padding: 12px 14px;
+            }
+
+            .doc-section h2 {
+                margin-top: 0;
+                font-size: 13pt;
+            }
+
+            .meta-row, .meta-row.four, .summary-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px;
+            }
+
+            .summary-grid div,
+            .meta-row div,
+            .field-row,
+            .data-row {
+                border: 1px solid #000 !important;
+                padding: 10px !important;
+                background: #fff !important;
+            }
+
+            .assessment-result {
+                background: #f3f3f3 !important;
+                border-color: #000 !important;
+                color: #000 !important;
+                box-shadow: none !important;
+            }
+
+            .threshold-notes {
+                background: #fff !important;
+                border-color: #000 !important;
+                color: #000 !important;
+            }
+
+            .doc-footer,
+            .doc-header .legend-pill,
+            .no-print,
+            .hide-print {
+                display: none !important;
+            }
         }
 
         @media (max-width: 600px) {
