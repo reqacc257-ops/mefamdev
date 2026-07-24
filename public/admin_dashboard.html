@@ -1632,7 +1632,18 @@ async function loadAllData() {
         const existingIntake = JSON.parse(localStorage.getItem('mefamdev_intake_sheets') || '[]');
         const existingAssessments = JSON.parse(localStorage.getItem('mefamdev_assessments') || '[]');
 
-        const appList = Array.isArray(apps) && apps.length > 0 ? apps : existingApps;
+        function mergeAppLists(serverApps, localApps) {
+            const merged = Array.isArray(serverApps) ? [...serverApps] : [];
+            if (!Array.isArray(localApps)) return merged;
+            localApps.forEach(localApp => {
+                if (!merged.some(app => String(app.id) === String(localApp.id))) {
+                    merged.push(localApp);
+                }
+            });
+            return merged;
+        }
+
+        const appList = mergeAppLists(apps, existingApps);
         const familyList = Array.isArray(families) ? families : JSON.parse(localStorage.getItem('mefamdev_families') || '[]');
         const announcementList = Array.isArray(announcements) ? announcements : JSON.parse(localStorage.getItem('mefamdev_announcements') || '[]');
         const eventList = Array.isArray(events) ? events : existingEvents;
